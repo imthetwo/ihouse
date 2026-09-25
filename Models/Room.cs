@@ -1,23 +1,36 @@
-﻿namespace ihouse.Models
+﻿using System.ComponentModel.DataAnnotations;
+using ihouse.Models.Enums;
+
+namespace ihouse.Models
 {
     public class Room
     {
-        public int Id { get; set; } //0
+        public int Id { get; set; }
 
-        public string RoomNumber { get; set; } = string.Empty; // ""
+        [Required]
+        [StringLength(20)]
+        public string RoomNumber { get; set; } = string.Empty;
 
-        public int Floor { get; set; } //0
+        [Range(1, 150)]
+        public int Floor { get; set; }
 
-        public string RoomType { get; set; } = string.Empty; // ""
+        [Required]
+        [StringLength(50)]
+        public string RoomType { get; set; } = string.Empty;
 
-        public int Capacity { get; set; } //0
+        [Range(1, 5)]
+        public int Capacity { get; set; }
 
-        public decimal RentPrice { get; set; } //0
+        [Range(0, 1000000000)]
+        public decimal RentPrice { get; set; }
 
-        public string Status { get; set; } = "Active";  //Active
+        public RoomStatus Status { get; set; }
 
-        public string? Description { get; set; } // nullable        
+        [StringLength(500)]
+        public string? Description { get; set; }
 
-        public string? ImageUrl { get; set; } // nullable
+        [Url]
+        [StringLength(500)]
+        public string? ImageUrl { get; set; }
     }
 }

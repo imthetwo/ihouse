@@ -1,17 +1,19 @@
-﻿namespace ihouse.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+public class Tenant
 {
-    public class Tenant
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public string FullName { get; set; } = string.Empty;
+    [Required]
+    public string FullName { get; set; } = string.Empty;
 
-        public string IdentityNumber { get; set; } = string.Empty;
+    [Required]
+    [StringLength(12)]
+    public string IdentityNumber { get; set; } = string.Empty;
 
-        public string Phone { get; set; } = string.Empty;
+    [Phone]
+    public string? Phone { get; set; }
 
-        public string? Email { get; set; }
-
-        public string? Address { get; set; }
-    }
+    [EmailAddress]
+    public string? Email { get; set; }
 }
