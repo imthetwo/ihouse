@@ -1,4 +1,6 @@
-﻿namespace ihouse.Models
+﻿using ihouse.Models.Enums;
+
+namespace ihouse.Models
 {
     public class ServicePrice
     {
@@ -13,5 +15,9 @@
         public DateOnly? EffectiveTo { get; set; }
 
         public bool IsActive { get; set; }
+
+        // Relationship
+        public ICollection<RoomService> RoomServices { get; set; }
+            = new List<RoomService>();
     }
 }

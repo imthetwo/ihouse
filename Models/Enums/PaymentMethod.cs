@@ -1,4 +1,4 @@
-﻿namespace ihouse.Models
+﻿namespace ihouse.Models.Enums
 {
     public enum PaymentMethod
     {

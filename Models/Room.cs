@@ -32,5 +32,18 @@ namespace ihouse.Models
         [Url]
         [StringLength(500)]
         public string? ImageUrl { get; set; }
+
+        // Relationships
+        public ICollection<Contract> Contracts { get; set; }
+            = new List<Contract>();
+
+        public ICollection<RoomService> RoomServices { get; set; }
+            = new List<RoomService>();
+
+        public ICollection<MeterReading> MeterReadings { get; set; }
+            = new List<MeterReading>();
+
+        public ICollection<MaintenanceRequest> MaintenanceRequests { get; set; }
+            = new List<MaintenanceRequest>();
     }
 }
