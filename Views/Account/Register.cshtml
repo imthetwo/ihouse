@@ -1,0 +1,113 @@
+
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Create an Account";
+    ViewData["ShowBackToLogin"] = true;
+}
+
+<div class="register-page">
+    <div class="register-card">
+
+        <div class="register-heading">
+            <div class="register-icon">⌂</div>
+
+            <h1>Create an Account</h1>
+
+            <p>
+                Get started with iHouse property management.
+            </p>
+        </div>
+
+        <form asp-controller="Account"
+              asp-action="Register"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger mb-3">
+            </div>
+
+            <div class="mb-3">
+                <label for="FullName" class="form-label">
+                    Full Name
+                </label>
+
+                <input id="FullName"
+                       name="FullName"
+                       type="text"
+                       class="form-control auth-input"
+                       placeholder="Enter your full name"
+                       autocomplete="name"
+                       required />
+            </div>
+
+            <div class="mb-3">
+                <label for="Email" class="form-label">
+                    Email Address
+                </label>
+
+                <input id="Email"
+                       name="Email"
+                       type="email"
+                       class="form-control auth-input"
+                       placeholder="you@example.com"
+                       autocomplete="email"
+                       required />
+            </div>
+
+            <div class="mb-3">
+                <label for="Password" class="form-label">
+                    Password
+                </label>
+
+                <input id="Password"
+                       name="Password"
+                       type="password"
+                       class="form-control auth-input"
+                       placeholder="Create a password"
+                       autocomplete="new-password"
+                       minlength="8"
+                       required />
+
+                <div class="form-text">
+                    Use at least 8 characters, including a number,
+                    an uppercase letter and a lowercase letter.
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="ConfirmPassword" class="form-label">
+                    Confirm Password
+                </label>
+
+                <input id="ConfirmPassword"
+                       name="ConfirmPassword"
+                       type="password"
+                       class="form-control auth-input"
+                       placeholder="Re-enter your password"
+                       autocomplete="new-password"
+                       minlength="8"
+                       required />
+            </div>
+
+            <button type="submit"
+                    class="btn btn-primary auth-submit w-100">
+                Create Account
+            </button>
+        </form>
+
+        <p class="auth-switch register-switch">
+            Already have an account?
+            <a asp-controller="Account"
+               asp-action="Login">
+                Sign In
+            </a>
+        </p>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

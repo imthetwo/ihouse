@@ -1,0 +1,156 @@
+
+@{
+    ViewData["Title"] = "Sign In";
+    Layout = "_AuthLayout";
+}
+
+<div class="login-page">
+    <div class="login-container">
+
+        <!-- Left panel: Introduction -->
+        <section class="login-intro">
+
+            <a asp-controller="Home"
+               asp-action="Index"
+               class="login-logo">
+                <span class="login-logo-icon">⌂</span>`
+                <span>iHouse</span>
+            </a>
+
+            <div class="login-intro-content">
+
+                <h1>
+                    Manage your property.<br />
+                    Simplify your life.
+                </h1>
+
+                <p class="login-description">
+                    The smarter way to manage rooms, tenants,
+                    contracts and payments in one place.
+                </p>
+
+                <div class="login-feature">
+                    <span class="feature-icon">✓</span>
+                    <div>
+                        <strong>Easy Room Management</strong>
+                        <p>Keep track of rooms and occupancy.</p>
+                    </div>
+                </div>
+
+                <div class="login-feature">
+                    <span class="feature-icon">✓</span>
+                    <div>
+                        <strong>Smart Invoice Tracking</strong>
+                        <p>Manage rent, utilities and payments.</p>
+                    </div>
+                </div>
+
+                <div class="login-feature">
+                    <span class="feature-icon">✓</span>
+                    <div>
+                        <strong>Everything in One Place</strong>
+                        <p>Access your property information easily.</p>
+                    </div>
+                </div>
+
+                <!-- House illustration -->
+                <div class="login-house-image">
+                    <img src="~/images/houseimagebanner.png"
+                         alt="iHouse property illustration" />
+                </div>
+
+            </div>
+
+            <div class="login-intro-footer">
+                Property management made simple.
+            </div>
+
+        </section>
+
+        <!-- Right panel: Login form -->
+        <section class="login-form-panel">
+            <div class="login-form-wrapper">
+
+                <div class="login-heading">
+                    <h2>Welcome Back</h2>
+                    <p>Sign in to continue to your iHouse account.</p>
+                </div>
+
+                <form asp-controller="Account"
+                      asp-action="Login"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-4">
+                        <label for="Email" class="form-label">
+                            Email Address
+                        </label>
+
+                        <input id="Email"
+                               name="Email"
+                               type="email"
+                               class="form-control auth-input"
+                               placeholder="you@example.com"
+                               autocomplete="email"
+                               required />
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label for="Password" class="form-label mb-0">
+                                Password
+                            </label>
+
+                            <a asp-controller="Account"
+                               asp-action="ForgotPassword"
+                               class="auth-link">
+                                Forgot password?
+                            </a>
+                        </div>
+
+                        <input id="Password"
+                               name="Password"
+                               type="password"
+                               class="form-control auth-input"
+                               placeholder="Enter your password"
+                               autocomplete="current-password"
+                               required />
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input id="RememberMe"
+                               name="RememberMe"
+                               type="checkbox"
+                               value="true"
+                               class="form-check-input" />
+
+                        <label for="RememberMe" class="form-check-label">
+                            Remember me
+                        </label>
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary auth-submit w-100">
+                        Sign In
+                    </button>
+
+                </form>
+
+                <div class="auth-divider">
+                    <span>NEW TO IHOUSE?</span>
+                </div>
+
+                <p class="auth-switch">
+                    Don't have an account?
+                    <a asp-controller="Account"
+                       asp-action="Register">
+                        Create an account
+                    </a>
+                </p>
+
+            </div>
+        </section>
+
+    </div>
+</div>
