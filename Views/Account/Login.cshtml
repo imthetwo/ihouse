@@ -13,7 +13,7 @@
             <a asp-controller="Home"
                asp-action="Index"
                class="login-logo">
-                <span class="login-logo-icon">⌂</span>`
+                <span class="login-logo-icon">⌂</span>
                 <span>iHouse</span>
             </a>
 
@@ -30,7 +30,6 @@
                 </p>
 
                 <div class="login-feature">
-                    <span class="feature-icon">✓</span>
                     <div>
                         <strong>Easy Room Management</strong>
                         <p>Keep track of rooms and occupancy.</p>
@@ -38,7 +37,6 @@
                 </div>
 
                 <div class="login-feature">
-                    <span class="feature-icon">✓</span>
                     <div>
                         <strong>Smart Invoice Tracking</strong>
                         <p>Manage rent, utilities and payments.</p>
@@ -46,7 +44,6 @@
                 </div>
 
                 <div class="login-feature">
-                    <span class="feature-icon">✓</span>
                     <div>
                         <strong>Everything in One Place</strong>
                         <p>Access your property information easily.</p>
@@ -67,90 +64,112 @@
 
         </section>
 
-        <!-- Right panel: Login form -->
-        <section class="login-form-panel">
-            <div class="login-form-wrapper">
+        <!-- Right column: Login form and language selector -->
+        <div class="login-right-column">
 
-                <div class="login-heading">
-                    <h2>Welcome Back</h2>
-                    <p>Sign in to continue to your iHouse account.</p>
-                </div>
+            <section class="login-form-panel">
+                <div class="login-form-wrapper">
 
-                <form asp-controller="Account"
-                      asp-action="Login"
-                      method="post">
-
-                    @Html.AntiForgeryToken()
-
-                    <div class="mb-4">
-                        <label for="Email" class="form-label">
-                            Email Address
-                        </label>
-
-                        <input id="Email"
-                               name="Email"
-                               type="email"
-                               class="form-control auth-input"
-                               placeholder="you@example.com"
-                               autocomplete="email"
-                               required />
+                    <div class="login-heading">
+                        <h2>Welcome Back</h2>
+                        <p>Sign in to continue to your iHouse account.</p>
                     </div>
 
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label for="Password" class="form-label mb-0">
-                                Password
+                    <form asp-controller="Account"
+                          asp-action="Login"
+                          method="post">
+
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-4">
+                            <label for="Email" class="form-label">
+                                Email Address
                             </label>
 
-                            <a asp-controller="Account"
-                               asp-action="ForgotPassword"
-                               class="auth-link">
-                                Forgot password?
-                            </a>
+                            <input id="Email"
+                                   name="Email"
+                                   type="email"
+                                   class="form-control auth-input"
+                                   placeholder="you@example.com"
+                                   autocomplete="email"
+                                   required />
                         </div>
 
-                        <input id="Password"
-                               name="Password"
-                               type="password"
-                               class="form-control auth-input"
-                               placeholder="Enter your password"
-                               autocomplete="current-password"
-                               required />
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="Password" class="form-label mb-0">
+                                    Password
+                                </label>
+
+                                <a asp-controller="Account"
+                                   asp-action="ForgotPassword"
+                                   class="auth-link">
+                                    Forgot password?
+                                </a>
+                            </div>
+
+                            <input id="Password"
+                                   name="Password"
+                                   type="password"
+                                   class="form-control auth-input"
+                                   placeholder="Enter your password"
+                                   autocomplete="current-password"
+                                   required />
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input id="RememberMe"
+                                   name="RememberMe"
+                                   type="checkbox"
+                                   value="true"
+                                   class="form-check-input" />
+
+                            <label for="RememberMe" class="form-check-label">
+                                Remember me
+                            </label>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary auth-submit w-100">
+                            Sign In
+                        </button>
+
+                    </form>
+
+                    <div class="auth-divider">
+                        <span>NEW TO IHOUSE?</span>
                     </div>
 
-                    <div class="form-check mb-4">
-                        <input id="RememberMe"
-                               name="RememberMe"
-                               type="checkbox"
-                               value="true"
-                               class="form-check-input" />
+                    <p class="auth-switch">
+                        Don't have an account?
+                        <a asp-controller="Account"
+                           asp-action="Register">
+                            Create an account
+                        </a>
+                    </p>
 
-                        <label for="RememberMe" class="form-check-label">
-                            Remember me
-                        </label>
-                    </div>
-
-                    <button type="submit"
-                            class="btn btn-primary auth-submit w-100">
-                        Sign In
-                    </button>
-
-                </form>
-
-                <div class="auth-divider">
-                    <span>NEW TO IHOUSE?</span>
                 </div>
+            </section>
 
-                <p class="auth-switch">
-                    Don't have an account?
-                    <a asp-controller="Account"
-                       asp-action="Register">
-                        Create an account
-                    </a>
-                </p>
+            <!-- Language selector below the right panel -->
+            <div class="login-language">
 
+            <i class ="bi bi-globe2 language icon"></i>
+                <label for="authLanguage" class="visually-hidden">
+                    Language
+                </label>
+
+                <select id="authLanguage"
+                        class="auth-language"
+                        aria-label="Language">
+                    <option value="vi" selected>Tiếng Việt</option>
+                    <option value="en">English</option>
+                </select>
+              <i class="bi bi-chevron-down language-chevron"></i>
             </div>
-        </section>
+
+        </div>
 
     </div>
 </div>
+```
