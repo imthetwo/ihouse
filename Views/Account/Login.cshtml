@@ -1,3 +1,4 @@
+@model ihouse.ViewModels.Account.LoginViewModel
 
 @{
     ViewData["Title"] = "Sign In";
@@ -7,13 +8,14 @@
 <div class="login-page">
     <div class="login-container">
 
-        <!-- Left panel: Introduction -->
+        <!-- LEFT PANEL -->
         <section class="login-intro">
 
             <a asp-controller="Home"
                asp-action="Index"
                class="login-logo">
-                <span class="login-logo-icon">⌂</span>
+
+                <i class="bi bi-house-door"></i>
                 <span>iHouse</span>
             </a>
 
@@ -50,7 +52,6 @@
                     </div>
                 </div>
 
-                <!-- House illustration -->
                 <div class="login-house-image">
                     <img src="~/images/houseimagebanner.png"
                          alt="iHouse property illustration" />
@@ -64,7 +65,7 @@
 
         </section>
 
-        <!-- Right column: Login form and language selector -->
+        <!-- RIGHT PANEL -->
         <div class="login-right-column">
 
             <section class="login-form-panel">
@@ -75,29 +76,44 @@
                         <p>Sign in to continue to your iHouse account.</p>
                     </div>
 
+                    <!-- LOGIN FORM -->
                     <form asp-controller="Account"
                           asp-action="Login"
                           method="post">
 
                         @Html.AntiForgeryToken()
 
+                        <!-- General validation errors -->
+                        <div asp-validation-summary="ModelOnly"
+                             class="text-danger mb-3">
+                        </div>
+
+                        <!-- EMAIL -->
                         <div class="mb-4">
-                            <label for="Email" class="form-label">
+
+                            <label asp-for="Email"
+                                   class="form-label">
                                 Email Address
                             </label>
 
-                            <input id="Email"
-                                   name="Email"
+                            <input asp-for="Email"
                                    type="email"
                                    class="form-control auth-input"
                                    placeholder="you@example.com"
-                                   autocomplete="email"
-                                   required />
+                                   autocomplete="email" />
+
+                            <span asp-validation-for="Email"
+                                  class="text-danger"></span>
+
                         </div>
 
+                        <!-- PASSWORD -->
                         <div class="mb-3">
+
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label for="Password" class="form-label mb-0">
+
+                                <label asp-for="Password"
+                                       class="form-label mb-0">
                                     Password
                                 </label>
 
@@ -106,29 +122,34 @@
                                    class="auth-link">
                                     Forgot password?
                                 </a>
+
                             </div>
 
-                            <input id="Password"
-                                   name="Password"
+                            <input asp-for="Password"
                                    type="password"
                                    class="form-control auth-input"
                                    placeholder="Enter your password"
-                                   autocomplete="current-password"
-                                   required />
+                                   autocomplete="current-password" />
+
+                            <span asp-validation-for="Password"
+                                  class="text-danger"></span>
+
                         </div>
 
+                        <!-- REMEMBER ME -->
                         <div class="form-check mb-4">
-                            <input id="RememberMe"
-                                   name="RememberMe"
-                                   type="checkbox"
-                                   value="true"
+
+                            <input asp-for="RememberMe"
                                    class="form-check-input" />
 
-                            <label for="RememberMe" class="form-check-label">
+                            <label asp-for="RememberMe"
+                                   class="form-check-label">
                                 Remember me
                             </label>
+
                         </div>
 
+                        <!-- SUBMIT -->
                         <button type="submit"
                                 class="btn btn-primary auth-submit w-100">
                             Sign In
@@ -142,6 +163,7 @@
 
                     <p class="auth-switch">
                         Don't have an account?
+
                         <a asp-controller="Account"
                            asp-action="Register">
                             Create an account
@@ -151,25 +173,31 @@
                 </div>
             </section>
 
-            <!-- Language selector below the right panel -->
+            <!-- LANGUAGE SELECTOR -->
             <div class="login-language">
 
-            <i class ="bi bi-globe2 language icon"></i>
-                <label for="authLanguage" class="visually-hidden">
+                <i class="bi bi-globe2"></i>
+
+                <label for="authLanguage"
+                       class="visually-hidden">
                     Language
                 </label>
 
                 <select id="authLanguage"
                         class="auth-language"
                         aria-label="Language">
-                    <option value="vi" selected>Tiếng Việt</option>
-                    <option value="en">English</option>
+
+                    <option value="en" selected>English</option>
+                    <option value="vi">Tiếng Việt</option>
+
                 </select>
-              <i class="bi bi-chevron-down language-chevron"></i>
+
             </div>
 
         </div>
-
     </div>
 </div>
-```
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
