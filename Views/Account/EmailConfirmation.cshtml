@@ -1,0 +1,47 @@
+
+@{
+    ViewData["Title"] = "Email Confirmation";
+    Layout = "_AuthLayout";
+
+    bool success = ViewBag.Success == true;
+}
+
+<div class="forgot-page">
+    <div class="forgot-card">
+
+        <div class="auth-result-icon @(success ? "auth-result-success" : "auth-result-danger")">
+            <i class="bi @(success ? "bi-check-circle" : "bi-exclamation-circle")"></i>
+        </div>
+
+        <div class="forgot-heading text-center">
+
+            @if (success)
+            {
+                <h1>Email Verified!</h1>
+
+                <p>
+                    Your email address has been verified successfully.
+                    You can now sign in to iHouse.
+                </p>
+            }
+            else
+            {
+                <h1>Verification Failed</h1>
+
+                <p>
+                    The verification link is invalid or expired.
+                    Please request a new verification email.
+                </p>
+            }
+
+        </div>
+
+        <a asp-controller="Account"
+           asp-action="Login"
+           class="btn btn-primary auth-submit
+                  d-flex align-items-center justify-content-center">
+            Back to Sign In
+        </a>
+
+    </div>
+</div>

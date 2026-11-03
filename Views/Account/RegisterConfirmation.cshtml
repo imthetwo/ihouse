@@ -1,0 +1,55 @@
+
+@{
+    ViewData["Title"] = "Check Your Email";
+    Layout = "_AuthLayout";
+}
+
+<div class="forgot-page">
+    <div class="forgot-card">
+
+        <div class="forgot-heading text-center">
+            <h1>Check Your Email</h1>
+            <p>
+                Your account has been created.
+                Please check your inbox for a verification link.
+            </p>
+        </div>
+
+        @if (TempData["EmailNotice"] != null)
+        {
+            <div class="alert alert-info" role="status">
+                @TempData["EmailNotice"]
+            </div>
+        }
+
+        <form asp-controller="Account"
+              asp-action="ResendConfirmationEmail"
+              method="post">
+
+            <label for="email" class="form-label">
+                Didn't receive an email?
+            </label>
+
+            <input type="email"
+                   id="email"
+                   name="email"
+                   class="form-control auth-input"
+                   placeholder="Enter your registered email"
+                   autocomplete="email"
+                   required />
+
+            <button type="submit"
+                    class="btn btn-primary auth-submit w-100 mt-3">
+                Resend Verification Email
+            </button>
+
+        </form>
+
+        <a asp-controller="Account"
+           asp-action="Login"
+           class="auth-back-link d-block text-center mt-3">
+            Back to Sign In
+        </a>
+
+    </div>
+</div>

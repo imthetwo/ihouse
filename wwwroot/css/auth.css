@@ -1,12 +1,232 @@
-/* ===== LOGIN ALIGNMENT FIX ===== */
 
-/* Khung đăng nhập */
-.login-container {
-    grid-template-columns: 1fr 1fr;
-    max-width: 1300px;
+/* =========================================
+   IHOUSE - AUTHENTICATION
+   Shared + Login + Register + Password Pages
+   ========================================= */
+
+/* ===== 1. GLOBAL AUTH LAYOUT ===== */
+
+body.auth-body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: #F1F5F9;
+    color: #183153;
+    font-family: Arial, sans-serif;
 }
 
-/* Cột trắng bên phải */
+.auth-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.auth-main {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 32px 24px;
+}
+
+
+/* ===== 2. SHARED COMPONENTS ===== */
+
+.auth-input {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 1px solid #DCE5F0;
+    border-radius: 9px;
+    background: #FFFFFF;
+    color: #183153;
+}
+
+.auth-input:focus {
+    outline: none;
+    border-color: #0866D9;
+    box-shadow: 0 0 0 3px rgba(8, 102, 217, 0.12);
+}
+
+.auth-submit {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    border: none;
+    border-radius: 9px;
+    background-color: #0866D9;
+    color: #FFFFFF;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.auth-submit:hover {
+    background-color: #0755B4;
+    color: #FFFFFF;
+}
+
+.auth-link,
+.auth-back-link {
+    color: #0866D9;
+    text-decoration: none;
+}
+
+.auth-link:hover,
+.auth-back-link:hover {
+    color: #0755B4;
+    text-decoration: underline;
+}
+
+.auth-switch {
+    margin-top: 24px;
+    margin-bottom: 0;
+    text-align: center;
+    color: #718096;
+    font-size: 14px;
+}
+
+.auth-switch a {
+    color: #0866D9;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-switch a:hover {
+    text-decoration: underline;
+}
+
+.form-check-input:checked {
+    background-color: #0866D9;
+    border-color: #0866D9;
+}
+
+.field-validation-error {
+    display: block;
+    margin-top: 5px;
+    color: #DC2626;
+    font-size: 12px;
+}
+
+
+/* ===== 3. LOGIN PAGE ===== */
+
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.login-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+
+    width: 100%;
+    max-width: 1300px;
+    min-height: 650px;
+
+    overflow: hidden;
+    background-color: #FFFFFF;
+    border: 1px solid #DCE5F0;
+    border-radius: 18px;
+    box-shadow: 0 12px 40px rgba(26, 58, 100, 0.10);
+}
+
+
+/* ===== 4. LOGIN LEFT PANEL ===== */
+
+.login-intro {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-width: 0;
+
+    padding: 38px 40px;
+    background-color: #174A80;
+    color: #FFFFFF;
+}
+
+.login-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: fit-content;
+
+    color: #FFFFFF;
+    font-size: 30px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.login-logo:hover {
+    color: #FFFFFF;
+}
+
+.login-logo .bi {
+    font-size: 30px;
+}
+
+.login-intro-content {
+    margin: auto 0;
+    padding: 40px 0;
+}
+
+.login-intro-content h1 {
+    margin-bottom: 24px;
+    color: #FFFFFF;
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.login-intro-content > p {
+    margin-bottom: 36px;
+    color: #DCEBFF;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+.login-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+.login-feature strong {
+    color: #FFFFFF;
+    font-size: 15px;
+}
+
+.login-feature p {
+    margin: 8px 0 0;
+    color: #DCEBFF;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.login-intro-footer {
+    color: #DCEBFF;
+    font-size: 13px;
+}
+
+/* Hide illustration to match existing login design */
+
+.login-house-image {
+    display: none;
+}
+
+.login-house-image img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+
+/* ===== 5. LOGIN RIGHT PANEL ===== */
+
 .login-right-column {
     display: flex;
     flex-direction: column;
@@ -14,12 +234,11 @@
     background-color: #FFFFFF;
 }
 
-/* Căn giữa form đăng nhập */
 .login-form-panel {
     display: flex;
     flex: 1;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     padding: 44px;
 }
 
@@ -28,23 +247,35 @@
     max-width: 450px;
 }
 
-/* Tiêu đề */
+.login-heading {
+    margin-bottom: 34px;
+}
+
 .login-heading h2 {
+    margin-bottom: 10px;
+    color: #183153;
     font-size: 32px;
     font-weight: 700;
 }
 
-/* Sửa dòng NEW TO IHOUSE? */
+.login-heading p {
+    color: #718096;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
 .auth-divider {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12px;
     width: 100%;
-    margin-top: 32px;
+
+    margin-top: 30px;
     color: #718096;
     font-size: 11px;
     letter-spacing: 1px;
+    white-space: nowrap;
 }
 
 .auth-divider::before,
@@ -56,40 +287,318 @@
     background-color: #DCE5F0;
 }
 
-/* Sửa bộ chọn ngôn ngữ */
 .login-language {
     display: flex;
-    align-items: center;
     justify-content: flex-end;
+    align-items: center;
     gap: 8px;
+
     width: 100%;
     padding: 12px 28px 20px;
+    color: #183153;
 }
 
 .login-language .bi {
     font-size: 17px;
-    color: #183153;
 }
 
 .auth-language {
-    appearance: none;
-    -webkit-appearance: none;
     border: none;
-    background: transparent;
+    background-color: transparent;
     color: #334155;
     font-size: 13px;
     cursor: pointer;
-    padding: 4px;
 }
 
-/* Responsive */
+
+/* ===== 6. REGISTER PAGE ===== */
+
+.register-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 12px 0;
+}
+
+.register-card {
+    width: 100%;
+    max-width: 480px;
+    padding: 36px 40px;
+
+    background-color: #FFFFFF;
+    border: 1px solid #DCE5F0;
+    border-radius: 18px;
+    box-shadow: 0 12px 40px rgba(26, 58, 100, 0.10);
+}
+
+.auth-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.register-heading {
+    margin-bottom: 28px;
+    text-align: center;
+}
+
+.register-heading h1 {
+    margin-bottom: 10px;
+    color: #183153;
+    font-size: 27px;
+    font-weight: 700;
+}
+
+.register-heading p {
+    margin: 0;
+    color: #718096;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.register-card .form-label {
+    margin-bottom: 8px;
+    color: #183153;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.register-switch {
+    margin-top: 24px;
+    margin-bottom: 0;
+}
+
+
+/* ===== 7. TABLET ===== */
+
 @media (max-width: 768px) {
+
+    .auth-main {
+        padding: 20px;
+    }
+
     .login-container {
         grid-template-columns: 1fr;
         max-width: 480px;
     }
 
+    .login-intro {
+        padding: 28px;
+    }
+
+    .login-intro-content {
+        padding: 30px 0 10px;
+    }
+
+    .login-intro-content h1 {
+        font-size: 26px;
+    }
+
+    .login-intro-footer {
+        display: none;
+    }
+
     .login-form-panel {
         padding: 36px 28px;
     }
+
+    .login-heading h2 {
+        font-size: 28px;
+    }
+
+    .login-language {
+        padding: 12px 24px 20px;
+    }
+}
+
+
+/* ===== 8. MOBILE ===== */
+
+@media (max-width: 480px) {
+
+    .auth-main {
+        padding: 12px;
+    }
+
+    .login-intro {
+        padding: 24px;
+    }
+
+    .login-intro-content h1 {
+        font-size: 24px;
+    }
+
+    .login-form-panel {
+        padding: 28px 22px;
+    }
+
+    .register-card {
+        padding: 28px 22px;
+    }
+
+    .register-heading h1 {
+        font-size: 24px;
+    }
+}
+
+
+/* =========================================
+   9. PASSWORD & ACCOUNT PAGES
+   ========================================= */
+
+.forgot-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 20px 0;
+}
+
+.forgot-card {
+    width: 100%;
+    max-width: 480px;
+    padding: 36px 40px;
+
+    background-color: #FFFFFF;
+    border: 1px solid #DCE5F0;
+    border-radius: 18px;
+    box-shadow: 0 12px 40px rgba(26, 58, 100, 0.10);
+}
+
+.forgot-heading {
+    margin-bottom: 28px;
+}
+
+.forgot-heading h1 {
+    margin-bottom: 12px;
+    color: #183153;
+    font-size: 27px;
+    font-weight: 700;
+}
+
+.forgot-heading p {
+    margin: 0;
+    color: #718096;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.forgot-card .form-label {
+    margin-bottom: 8px;
+    color: #183153;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.forgot-footer {
+    margin-top: 24px;
+    margin-bottom: 0;
+    text-align: center;
+    color: #718096;
+    font-size: 14px;
+}
+
+.forgot-footer a {
+    color: #0866D9;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.forgot-footer a:hover {
+    text-decoration: underline;
+}
+
+
+/* ===== 10. RESULT ICONS ===== */
+
+.auth-result-icon {
+    display: grid;
+    place-items: center;
+
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 24px;
+
+    background-color: #E7F0FF;
+    color: #0866D9;
+    border-radius: 18px;
+    font-size: 32px;
+}
+
+.auth-result-success {
+    background-color: #DCFCE7;
+    color: #16A34A;
+}
+
+.auth-result-danger {
+    background-color: #FEE2E2;
+    color: #DC2626;
+}
+
+
+/* ===== 11. RESPONSIVE PASSWORD PAGES ===== */
+
+@media (max-width: 480px) {
+
+    .forgot-card {
+        padding: 28px 22px;
+    }
+
+    .forgot-heading h1 {
+        font-size: 24px;
+    }
+}
+
+
+/* =========================================
+   12. PASSWORD VISIBILITY TOGGLE
+   Login / Register / Reset Password
+   ========================================= */
+
+.password-box {
+    position: relative;
+    width: 100%;
+}
+
+.password-box .password-input {
+    display: block;
+    width: 100%;
+    padding-right: 48px;
+}
+
+.password-box .password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    margin: 0;
+
+    border: none;
+    background: transparent;
+    color: #64748B;
+
+    cursor: pointer;
+    z-index: 2;
+}
+
+.password-box .password-toggle:hover {
+    color: #0866D9;
+}
+
+.password-box .password-toggle:focus-visible {
+    outline: 2px solid #0866D9;
+    outline-offset: 2px;
+    border-radius: 4px;
 }
