@@ -1,0 +1,105 @@
+
+@model IEnumerable<ihouse.Models.Payment>
+
+@{
+    ViewData["Title"] = "Payment Management";
+    Layout = "_AdminLayout";
+
+    var usd = System.Globalization.CultureInfo
+        .GetCultureInfo("en-US");
+}
+
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+    <div class="mb-4">
+        <h4 class="fw-bold mb-1">Payment Management</h4>
+        <p class="text-muted mb-0">
+            View and track rental payments.
+        </p>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">Total Payments</p>
+                    <h2 class="fw-bold mb-0">@Model.Count()</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">Total Amount Received</p>
+                    <h2 class="fw-bold text-success mb-0">
+                        @Model.Sum(p => p.Amount).ToString("C2", usd)
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- PAYMENT TABLE -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">Payment History</h5>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Payment ID</th>
+                            <th>Invoice ID</th>
+                            <th>Amount</th>
+                            <th>Payment Date</th>
+                            <th>Payment Method</th>
+                            <th>Transaction Code</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var payment in Model)
+                        {
+                            <tr>
+                                <td>#@payment.Id</td>
+                                <td>#@payment.InvoiceId</td>
+
+                                <td class="fw-semibold text-success">
+                                    @payment.Amount.ToString("C2", usd)
+                                </td>
+
+                                <td>
+                                    @payment.PaymentDate.ToString("MMM dd, yyyy")
+                                </td>
+
+                                <td>@payment.PaymentMethod</td>
+
+                                <td>
+                                    @(payment.TransactionCode ?? "-")
+                                </td>
+                            </tr>
+                        }
+
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="6"
+                                    class="text-center text-muted py-4">
+                                    No payment records found.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+</div>

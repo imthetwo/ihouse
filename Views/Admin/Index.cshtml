@@ -3,31 +3,27 @@
 
 @{
     ViewData["Title"] = "Admin Dashboard";
+    Layout = "_AdminLayout";
 
-    var usd = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+    var usd = System.Globalization.CultureInfo
+        .GetCultureInfo("en-US");
 }
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-3">
 
-    <!-- PAGE HEADER -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+  
+        <div class="d-flex align-items-center gap-3">
 
-        <div>
-            <h2 class="fw-bold mb-1">
-                Admin Dashboard
-            </h2>
+            <span class="text-muted small">
+                <i class="bi bi-calendar3 me-2"></i>
+                @DateTime.Now.ToString("MMMM dd, yyyy", usd)
+            </span> 
 
-            <p class="text-muted mb-0">
-                Welcome to iHouse Property Management.
-            </p>
         </div>
-
-        <div class="text-muted">
-            <i class="bi bi-calendar3 me-2"></i>
-            @DateTime.Now.ToString("MMMM dd, yyyy", usd)
-        </div>
-
-    </div>
+       
+     
+       
+   
 
 
     <!-- ROOM STATISTICS -->
@@ -35,10 +31,12 @@
 
         <!-- TOTAL ROOMS -->
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100 rounded-3">
                 <div class="card-body p-4">
 
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-3">
+
                         <span class="text-muted fw-medium">
                             Total Rooms
                         </span>
@@ -61,10 +59,12 @@
 
         <!-- OCCUPIED ROOMS -->
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100 rounded-3">
                 <div class="card-body p-4">
 
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-3">
+
                         <span class="text-muted fw-medium">
                             Occupied Rooms
                         </span>
@@ -87,10 +87,12 @@
 
         <!-- AVAILABLE ROOMS -->
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100 rounded-3">
                 <div class="card-body p-4">
 
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-3">
+
                         <span class="text-muted fw-medium">
                             Available Rooms
                         </span>
@@ -113,10 +115,12 @@
 
         <!-- MAINTENANCE ROOMS -->
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100 rounded-3">
                 <div class="card-body p-4">
 
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-3">
+
                         <span class="text-muted fw-medium">
                             Maintenance Rooms
                         </span>
@@ -144,10 +148,12 @@
 
         <!-- MONTHLY REVENUE -->
         <div class="col-12 col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100 rounded-3">
                 <div class="card-body p-4">
 
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-3">
+
                         <span class="text-muted fw-medium">
                             Monthly Revenue
                         </span>
@@ -170,10 +176,12 @@
 
         <!-- UNPAID INVOICES -->
         <div class="col-12 col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100 rounded-3">
                 <div class="card-body p-4">
 
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-3">
+
                         <span class="text-muted fw-medium">
                             Unpaid Invoices
                         </span>
@@ -196,10 +204,12 @@
 
         <!-- OVERDUE INVOICES -->
         <div class="col-12 col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100 rounded-3">
                 <div class="card-body p-4">
 
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-3">
+
                         <span class="text-muted fw-medium">
                             Overdue Invoices
                         </span>
@@ -222,8 +232,8 @@
     </div>
 
 
-    <!-- MANAGEMENT MODULES -->
-    <div class="card border-0 shadow-sm">
+    <!-- PROPERTY MANAGEMENT -->
+    <div class="card border-0 shadow-sm rounded-3">
 
         <div class="card-body p-4">
 
@@ -233,57 +243,95 @@
             </h5>
 
             <p class="text-muted mb-4">
-                Manage your rooms, tenants, contracts, invoices and payments.
+                Manage your rooms, tenants, contracts,
+                invoices and payments.
             </p>
 
             <div class="row g-3">
 
+                <!-- ROOM MANAGEMENT -->
                 <div class="col-12 col-md-6 col-xl-3">
-                    <div class="border rounded-3 p-3 h-100">
-                        <i class="bi bi-door-closed fs-4 text-primary"></i>
-                        <h6 class="fw-semibold mt-3">
-                            Room Management
-                        </h6>
-                        <p class="text-muted small mb-0">
-                            Manage room information, availability and pricing.
-                        </p>
-                    </div>
+
+                    <a asp-controller="Rooms"
+                       asp-action="Index"
+                       class="text-decoration-none text-reset">
+
+                        <div class="border rounded-3 p-3 h-100">
+
+                            <i class="bi bi-door-closed fs-4 text-primary"></i>
+
+                            <h6 class="fw-semibold mt-3">
+                                Room Management
+                            </h6>
+
+                            <p class="text-muted small mb-0">
+                                Manage room information,
+                                availability and pricing.
+                            </p>
+
+                        </div>
+                    </a>
+
                 </div>
 
+
+                <!-- TENANT MANAGEMENT -->
                 <div class="col-12 col-md-6 col-xl-3">
+
                     <div class="border rounded-3 p-3 h-100">
+
                         <i class="bi bi-people fs-4 text-primary"></i>
+
                         <h6 class="fw-semibold mt-3">
                             Tenant Management
                         </h6>
+
                         <p class="text-muted small mb-0">
                             View and manage tenant information.
                         </p>
+
                     </div>
+
                 </div>
 
+
+                <!-- CONTRACT MANAGEMENT -->
                 <div class="col-12 col-md-6 col-xl-3">
+
                     <div class="border rounded-3 p-3 h-100">
+
                         <i class="bi bi-file-earmark-text fs-4 text-primary"></i>
+
                         <h6 class="fw-semibold mt-3">
                             Contract Management
                         </h6>
+
                         <p class="text-muted small mb-0">
                             Create and track rental contracts.
                         </p>
+
                     </div>
+
                 </div>
 
+
+                <!-- INVOICE MANAGEMENT -->
                 <div class="col-12 col-md-6 col-xl-3">
+
                     <div class="border rounded-3 p-3 h-100">
+
                         <i class="bi bi-receipt fs-4 text-primary"></i>
+
                         <h6 class="fw-semibold mt-3">
                             Invoice Management
                         </h6>
+
                         <p class="text-muted small mb-0">
                             Track invoices and outstanding payments.
                         </p>
+
                     </div>
+
                 </div>
 
             </div>

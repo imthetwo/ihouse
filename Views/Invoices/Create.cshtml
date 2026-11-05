@@ -1,0 +1,105 @@
+
+@model ihouse.ViewModels.Invoice.InvoiceFormViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Create Invoice";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="mb-4">
+        <a asp-controller="Invoice" asp-action="Index"
+           class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Invoices
+        </a>
+        <h4 class="fw-bold mt-3 mb-1">Create Invoice</h4>
+        <p class="text-muted">
+            Generate an invoice for a rental contract.
+        </p>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <form asp-controller="Invoice"
+                  asp-action="Create"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="All"
+                     class="text-danger mb-3"></div>
+
+                <div class="row g-4">
+
+                    <div class="col-12">
+                        <label asp-for="ContractId"
+                               class="form-label fw-semibold">
+                            Rental Contract
+                        </label>
+
+                        <select asp-for="ContractId"
+                                asp-items="@(ViewBag.ContractOptions as IEnumerable<SelectListItem>)"
+                                class="form-select">
+                            <option value="0">-- Select Contract --</option>
+                        </select>
+
+                        <span asp-validation-for="ContractId"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="InvoiceDate"
+                               class="form-label fw-semibold">
+                            Invoice Date
+                        </label>
+
+                        <input asp-for="InvoiceDate"
+                               type="date"
+                               class="form-control" />
+
+                        <span asp-validation-for="InvoiceDate"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="DueDate"
+                               class="form-label fw-semibold">
+                            Due Date
+                        </label>
+
+                        <input asp-for="DueDate"
+                               type="date"
+                               class="form-control" />
+
+                        <span asp-validation-for="DueDate"
+                              class="text-danger small"></span>
+                    </div>
+
+                </div>
+
+    
+
+                <hr class="my-4" />
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-controller="Invoice"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-receipt me-2"></i>
+                        Create Invoice
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>

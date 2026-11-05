@@ -1,0 +1,156 @@
+
+@model ihouse.ViewModels.ServicePrice.ServicePriceFormViewModel
+
+@using ihouse.Models.Enums
+
+@{
+    ViewData["Title"] = "Add Service Price";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+    <div class="mb-4">
+        <a asp-controller="ServicePrice"
+           asp-action="Index"
+           class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Service Prices
+        </a>
+
+        <h4 class="fw-bold mt-3 mb-1">
+            Add Service Price
+        </h4>
+
+        <p class="text-muted mb-0">
+            Configure a new service price and its effective period.
+        </p>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <form asp-controller="ServicePrice"
+                  asp-action="Create"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3"></div>
+
+                <div class="row g-4">
+
+                    <!-- SERVICE TYPE -->
+                    <div class="col-md-6">
+                        <label asp-for="ServiceType"
+                               class="form-label fw-semibold">
+                            Service Type
+                        </label>
+
+                        <select asp-for="ServiceType"
+                                asp-items="Html.GetEnumSelectList<ServiceType>()"
+                                class="form-select">
+                        </select>
+
+                        <span asp-validation-for="ServiceType"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- PRICE -->
+                    <div class="col-md-6">
+                        <label asp-for="Price"
+                               class="form-label fw-semibold">
+                            Price (USD)
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+
+                            <input asp-for="Price"
+                                   type="number"
+                                   min="0"
+                                   step="0.01"
+                                   class="form-control"
+                                   placeholder="0.00" />
+                        </div>
+
+                        <span asp-validation-for="Price"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- EFFECTIVE FROM -->
+                    <div class="col-md-6">
+                        <label asp-for="EffectiveFrom"
+                               class="form-label fw-semibold">
+                            Effective From
+                        </label>
+
+                        <input asp-for="EffectiveFrom"
+                               type="date"
+                               class="form-control" />
+
+                        <span asp-validation-for="EffectiveFrom"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- EFFECTIVE TO -->
+                    <div class="col-md-6">
+                        <label asp-for="EffectiveTo"
+                               class="form-label fw-semibold">
+                            Effective To (Optional)
+                        </label>
+
+                        <input asp-for="EffectiveTo"
+                               type="date"
+                               class="form-control" />
+
+                        <span asp-validation-for="EffectiveTo"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- STATUS -->
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive"
+                                   class="form-check-input"
+                                   type="checkbox" />
+
+                            <label asp-for="IsActive"
+                                   class="form-check-label fw-semibold">
+                                Active Service Price
+                            </label>
+                        </div>
+
+                        <span asp-validation-for="IsActive"
+                              class="text-danger small"></span>
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- ACTIONS -->
+                <div class="d-flex justify-content-end gap-2">
+
+                    <a asp-controller="ServicePrice"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>
+                        Save Service Price
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>

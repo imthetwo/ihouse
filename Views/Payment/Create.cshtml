@@ -1,0 +1,141 @@
+
+
+@model ihouse.ViewModels.Payment.PaymentFormViewModel
+@using ihouse.Models.Enums
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Record Payment";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="mb-4">
+        <a asp-controller="Payment" asp-action="Index"
+           class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Payments
+        </a>
+
+        <h4 class="fw-bold mt-3 mb-1">Record Payment</h4>
+        <p class="text-muted">
+            Record a payment received for an invoice.
+        </p>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <form asp-controller="Payment"
+                  asp-action="Create"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="All"
+                     class="text-danger mb-3"></div>
+
+                <div class="row g-4">
+
+                    <div class="col-12">
+                        <label asp-for="InvoiceId"
+                               class="form-label fw-semibold">
+                            Invoice
+                        </label>
+
+                        <select asp-for="InvoiceId"
+                                asp-items="@(ViewBag.InvoiceOptions as IEnumerable<SelectListItem>)"
+                                class="form-select">
+                            <option value="0">-- Select Invoice --</option>
+                        </select>
+
+                        <span asp-validation-for="InvoiceId"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Amount"
+                               class="form-label fw-semibold">
+                            Amount (USD)
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Amount"
+                                   type="number"
+                                   min="0.01"
+                                   step="0.01"
+                                   class="form-control" />
+                        </div>
+
+                        <span asp-validation-for="Amount"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="PaymentDate"
+                               class="form-label fw-semibold">
+                            Payment Date
+                        </label>
+
+                        <input asp-for="PaymentDate"
+                               type="datetime-local"
+                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                               class="form-control" />
+
+                        <span asp-validation-for="PaymentDate"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="PaymentMethod"
+                               class="form-label fw-semibold">
+                            Payment Method
+                        </label>
+
+                        <select asp-for="PaymentMethod"
+                                asp-items="Html.GetEnumSelectList<PaymentMethod>()"
+                                class="form-select">
+                        </select>
+
+                        <span asp-validation-for="PaymentMethod"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="TransactionCode"
+                               class="form-label fw-semibold">
+                            Transaction Code (Optional)
+                        </label>
+
+                        <input asp-for="TransactionCode"
+                               class="form-control"
+                               placeholder="Transaction reference" />
+
+                        <span asp-validation-for="TransactionCode"
+                              class="text-danger small"></span>
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-controller="Payment"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>
+                        Save Payment
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>

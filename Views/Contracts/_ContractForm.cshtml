@@ -1,0 +1,425 @@
+
+@model ihouse.ViewModels.Contract.ContractFormViewModel
+@using ihouse.Models.Enums
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    string selectedTenantName =
+        (string?)ViewBag.SelectedTenantName ?? "";
+}
+
+<div asp-validation-summary="All"
+     class="text-danger mb-3"></div>
+
+<div class="row g-3">
+
+    <!-- ROOM -->
+    <div class="col-md-6">
+        <label asp-for="RoomId"
+               class="form-label fw-semibold">
+            Room
+        </label>
+
+        <select asp-for="RoomId"
+                asp-items="(IEnumerable<SelectListItem>)ViewBag.RoomOptions"
+                class="form-select">
+            <option value="0">-- Select Room --</option>
+        </select>
+
+        <span asp-validation-for="RoomId"
+              class="text-danger small"></span>
+    </div>
+
+    <!-- PRIMARY TENANT SEARCH -->
+    <div class="col-md-6">
+        <label for="tenantSearch"
+               class="form-label fw-semibold">
+            Primary Tenant
+        </label>
+
+        <!-- Actual ID submitted with the form -->
+        <input asp-for="PrimaryTenantId"
+               type="hidden" />
+
+        <div class="position-relative" id="tenantSearchContainer">
+
+            <div class="input-group">
+                <span class="input-group-text bg-white">
+                    <i class="bi bi-search"></i>
+                </span>
+
+                <input type="search"
+                       id="tenantSearch"
+                       class="form-control"
+                       value="@selectedTenantName"
+                       placeholder="Search ID, name or phone..."
+                       autocomplete="off"
+                       aria-autocomplete="list"
+                       aria-controls="tenantSearchResults"
+                       aria-expanded="false" />
+            </div>
+
+            <!-- Search results -->
+            <div id="tenantSearchResults"
+                 class="list-group position-absolute w-100 shadow-sm"
+                 role="listbox"
+                 style="display:none;
+                        top:100%;
+                        left:0;
+                        z-index:1050;
+                        max-height:260px;
+                        overflow-y:auto;">
+            </div>
+        </div>
+
+        <div class="form-text">
+            Search by tenant ID, full name or phone number.
+        </div>
+
+        <span asp-validation-for="PrimaryTenantId"
+              class="text-danger small"></span>
+    </div>
+
+    <!-- START DATE -->
+    <div class="col-md-6">
+        <label asp-for="ContractStartDate"
+               class="form-label fw-semibold">
+            Start Date
+        </label>
+
+        <input asp-for="ContractStartDate"
+               type="date"
+               class="form-control" />
+
+        <span asp-validation-for="ContractStartDate"
+              class="text-danger small"></span>
+    </div>
+
+    <!-- END DATE -->
+    <div class="col-md-6">
+        <label asp-for="ContractEndDate"
+               class="form-label fw-semibold">
+            End Date
+        </label>
+
+        <input asp-for="ContractEndDate"
+               type="date"
+               class="form-control" />
+
+        <span asp-validation-for="ContractEndDate"
+              class="text-danger small"></span>
+    </div>
+
+    <!-- MONTHLY RENT -->
+    <div class="col-md-6">
+        <label asp-for="RentPrice"
+               class="form-label fw-semibold">
+            Monthly Rent (USD)
+        </label>
+
+        <div class="input-group">
+            <span class="input-group-text">$</span>
+
+            <input asp-for="RentPrice"
+                   type="number"
+                   min="1"
+                   max="2000"
+                   step="0.01"
+                   class="form-control" />
+        </div>
+
+        <span asp-validation-for="RentPrice"
+              class="text-danger small"></span>
+    </div>
+
+    <!-- DEPOSIT -->
+    <div class="col-md-6">
+        <label asp-for="DepositAmount"
+               class="form-label fw-semibold">
+            Deposit (USD)
+        </label>
+
+        <div class="input-group">
+            <span class="input-group-text">$</span>
+
+            <input asp-for="DepositAmount"
+                   type="number"
+                   min="0"
+                   max="4000"
+                   step="0.01"
+                   class="form-control" />
+        </div>
+
+        <span asp-validation-for="DepositAmount"
+              class="text-danger small"></span>
+    </div>
+
+    <!-- PAYMENT METHOD -->
+    <div class="col-md-6">
+        <label asp-for="PaymentMethod"
+               class="form-label fw-semibold">
+            Payment Method
+        </label>
+
+        <select asp-for="PaymentMethod"
+                asp-items="Html.GetEnumSelectList<PaymentMethod>()"
+                class="form-select">
+        </select>
+
+        <span asp-validation-for="PaymentMethod"
+              class="text-danger small"></span>
+    </div>
+
+    <!-- CONTRACT STATUS -->
+    <div class="col-md-6">
+        <label asp-for="Status"
+               class="form-label fw-semibold">
+            Contract Status
+        </label>
+
+        <select asp-for="Status"
+                asp-items="Html.GetEnumSelectList<ContractStatus>()"
+                class="form-select">
+        </select>
+
+        <span asp-validation-for="Status"
+              class="text-danger small"></span>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const searchInput =
+            document.getElementById("tenantSearch");
+
+        const tenantIdInput =
+            document.getElementById("PrimaryTenantId");
+
+        const resultsBox =
+            document.getElementById("tenantSearchResults");
+
+        const container =
+            document.getElementById("tenantSearchContainer");
+
+        const searchUrl =
+            '@Url.Action("SearchTenants", "Contracts")';
+
+        let debounceTimer;
+        let currentRequest = null;
+
+        function hideResults() {
+            resultsBox.style.display = "none";
+            searchInput.setAttribute("aria-expanded", "false");
+        }
+
+        function showResults() {
+            resultsBox.style.display = "block";
+            searchInput.setAttribute("aria-expanded", "true");
+        }
+
+        function showMessage(message) {
+            resultsBox.replaceChildren();
+
+            const messageElement =
+                document.createElement("div");
+
+            messageElement.className =
+                "list-group-item text-muted small py-3";
+
+            messageElement.textContent = message;
+
+            resultsBox.appendChild(messageElement);
+
+            showResults();
+        }
+
+        function selectTenant(tenant) {
+            tenantIdInput.value = tenant.id;
+
+            searchInput.value =
+                tenant.name + " (ID: " + tenant.id + ")";
+
+            hideResults();
+        }
+
+        function renderResults(tenants) {
+            resultsBox.replaceChildren();
+
+            if (!tenants || tenants.length === 0) {
+                showMessage("No matching tenants found.");
+                return;
+            }
+
+            tenants.forEach(function (tenant) {
+
+                const item = document.createElement("button");
+
+                item.type = "button";
+
+                item.className =
+                    "list-group-item list-group-item-action text-start";
+
+                item.setAttribute("role", "option");
+
+                const name = document.createElement("div");
+
+                name.className = "fw-semibold";
+
+                name.textContent =
+                    tenant.name + " (ID: " + tenant.id + ")";
+
+                const phone = document.createElement("small");
+
+                phone.className = "text-muted";
+
+                phone.textContent =
+                    tenant.phone
+                        ? "Phone: " + tenant.phone
+                        : "No phone number";
+
+                item.appendChild(name);
+                item.appendChild(phone);
+
+                item.addEventListener("click", function () {
+                    selectTenant(tenant);
+                });
+
+                resultsBox.appendChild(item);
+            });
+
+            showResults();
+        }
+
+        async function searchTenants(term) {
+            if (currentRequest) {
+                currentRequest.abort();
+            }
+
+            const controller = new AbortController();
+            currentRequest = controller;
+
+            showMessage("Searching tenants...");
+
+            try {
+                const response = await fetch(
+                    searchUrl + "?term=" + encodeURIComponent(term),
+                    {
+                        signal: controller.signal,
+                        headers: {
+                            "Accept": "application/json"
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Search failed");
+                }
+
+                const tenants = await response.json();
+
+                if (currentRequest !== controller) {
+                    return;
+                }
+
+                renderResults(tenants);
+            }
+            catch (error) {
+                if (error.name !== "AbortError" &&
+                    currentRequest === controller) {
+                    showMessage("Unable to search tenants.");
+                }
+            }
+            finally {
+                if (currentRequest === controller) {
+                    currentRequest = null;
+                }
+            }
+        }
+
+        searchInput.addEventListener("input", function () {
+
+            // Typing invalidates the previously selected tenant.
+            tenantIdInput.value = "0";
+
+            clearTimeout(debounceTimer);
+
+            if (currentRequest) {
+                currentRequest.abort();
+                currentRequest = null;
+            }
+
+            const term = searchInput.value.trim();
+
+            const isNumeric = /^\d+$/.test(term);
+
+            if (term.length < 2 && !isNumeric) {
+                hideResults();
+                return;
+            }
+
+            debounceTimer = setTimeout(function () {
+                searchTenants(term);
+            }, 300);
+        });
+
+        searchInput.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                hideResults();
+            }
+
+            if (event.key === "ArrowDown") {
+                const firstResult =
+                    resultsBox.querySelector("button");
+
+                if (firstResult &&
+                    resultsBox.style.display !== "none") {
+                    event.preventDefault();
+                    firstResult.focus();
+                }
+            }
+        });
+
+        resultsBox.addEventListener("keydown", function (event) {
+
+            if (event.key === "Escape") {
+                hideResults();
+                searchInput.focus();
+                return;
+            }
+
+            if (event.key !== "ArrowDown" &&
+                event.key !== "ArrowUp") {
+                return;
+            }
+
+            const buttons = Array.from(
+                resultsBox.querySelectorAll("button")
+            );
+
+            const index = buttons.indexOf(document.activeElement);
+
+            if (index === -1) return;
+
+            event.preventDefault();
+
+            if (event.key === "ArrowDown") {
+                buttons[Math.min(index + 1, buttons.length - 1)].focus();
+            }
+            else if (index === 0) {
+                searchInput.focus();
+            }
+            else {
+                buttons[index - 1].focus();
+            }
+        });
+
+        document.addEventListener("click", function (event) {
+            if (!container.contains(event.target)) {
+                hideResults();
+            }
+        });
+
+    });
+</script>

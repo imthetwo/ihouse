@@ -1,0 +1,153 @@
+
+@model ihouse.Models.MaintenanceRequest
+@using System.Globalization
+@using ihouse.Models.Enums
+
+@{
+    ViewData["Title"] = "Maintenance Details";
+    Layout = "_AdminLayout";
+
+    var usd = CultureInfo.GetCultureInfo("en-US");
+    var totalCost = Model.MaintenanceCosts.Sum(c => c.Amount);
+    var tenantCost = Model.MaintenanceCosts
+        .Where(c => c.ChargeToTenant)
+        .Sum(c => c.Amount);
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a asp-controller="Maintenance"
+               asp-action="Index"
+               class="text-decoration-none text-muted">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Maintenance
+            </a>
+
+            <h4 class="fw-bold mt-3 mb-1">
+                Maintenance Request #@Model.Id
+            </h4>
+        </div>
+
+        @if (Model.Status == MaintenanceRqStatus.Completed)
+        {
+            <span class="badge bg-success fs-6">Completed</span>
+        }
+        else if (Model.Status == MaintenanceRqStatus.InProgress)
+        {
+            <span class="badge bg-primary fs-6">In Progress</span>
+        }
+        else if (Model.Status == MaintenanceRqStatus.Rejected)
+        {
+            <span class="badge bg-danger fs-6">Rejected</span>
+        }
+        else
+        {
+            <span class="badge bg-warning text-dark fs-6">Pending</span>
+        }
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">Total Maintenance Cost</p>
+                    <h4 class="fw-bold mb-0">
+                        @totalCost.ToString("C2", usd)
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">Charge to Tenant</p>
+                    <h4 class="fw-bold mb-0">
+                        @tenantCost.ToString("C2", usd)
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">Request Information</h5>
+
+            <dl class="row mb-0">
+
+                <dt class="col-sm-4">Room</dt>
+                <dd class="col-sm-8">@Model.Room.RoomNumber</dd>
+
+                <dt class="col-sm-4">Tenant</dt>
+                <dd class="col-sm-8">@Model.Tenant.FullName</dd>
+
+                <dt class="col-sm-4">Created At</dt>
+                <dd class="col-sm-8">
+                    @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                </dd>
+
+                <dt class="col-sm-4">Completed At</dt>
+                <dd class="col-sm-8">
+                    @(Model.CompletedAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")
+                </dd>
+
+                <dt class="col-sm-4">Description</dt>
+                <dd class="col-sm-8">@Model.Description</dd>
+
+            </dl>
+
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">Maintenance Costs</h5>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Charge to Tenant</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var cost in Model.MaintenanceCosts)
+                        {
+                            <tr>
+                                <td>#@cost.Id</td>
+                                <td>@(cost.Description ?? "-")</td>
+                                <td>@cost.Amount.ToString("C2", usd)</td>
+                                <td>
+                                    @(cost.ChargeToTenant ? "Yes" : "No")
+                                </td>
+                            </tr>
+                        }
+
+                        @if (!Model.MaintenanceCosts.Any())
+                        {
+                            <tr>
+                                <td colspan="4"
+                                    class="text-center text-muted py-4">
+                                    No maintenance costs recorded.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+</div>

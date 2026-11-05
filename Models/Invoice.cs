@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using ihouse.Models.Enums;
 
 namespace ihouse.Models
@@ -22,7 +24,7 @@ namespace ihouse.Models
         public DateOnly DueDate { get; set; }
 
         [Range(typeof(decimal), "0", "100000000",
-            ErrorMessage = "Total amount must be between 0 and 100,000,000 VND.")]
+            ErrorMessage = "Total amount must be between $0 and $100,000,000.")]
         public decimal TotalAmount { get; set; }
 
         [EnumDataType(typeof(InvoiceStatus),

@@ -1,0 +1,127 @@
+
+@model ihouse.ViewModels.MeterReading.MeterReadingFormViewModel
+
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Add Meter Reading";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="mb-4">
+        <a asp-controller="MeterReading"
+           asp-action="Index"
+           class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Meter Readings
+        </a>
+
+        <h4 class="fw-bold mt-3 mb-1">Add Meter Reading</h4>
+        <p class="text-muted">
+            Record electricity and water meter values for a room.
+        </p>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <form asp-controller="MeterReading"
+                  asp-action="Create"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="All"
+                     class="text-danger mb-3"></div>
+
+                <div class="row g-4">
+
+                    <div class="col-md-6">
+                        <label asp-for="RoomId" class="form-label fw-semibold">
+                            Room
+                        </label>
+
+                        <select asp-for="RoomId"
+                                asp-items="@(ViewBag.RoomOptions as IEnumerable<SelectListItem>)"
+                                class="form-select">
+                            <option value="0">-- Select Room --</option>
+                        </select>
+
+                        <span asp-validation-for="RoomId"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ReadingDay" class="form-label fw-semibold">
+                            Reading Date
+                        </label>
+
+                        <input asp-for="ReadingDay"
+                               type="date"
+                               class="form-control" />
+
+                        <span asp-validation-for="ReadingDay"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ElectricityReading"
+                               class="form-label fw-semibold">
+                            Electricity Reading (kWh)
+                        </label>
+
+                        <input asp-for="ElectricityReading"
+                               type="number"
+                               min="0"
+                               step="0.01"
+                               class="form-control" />
+
+                        <span asp-validation-for="ElectricityReading"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="WaterReading"
+                               class="form-label fw-semibold">
+                            Water Reading (m³)
+                        </label>
+
+                        <input asp-for="WaterReading"
+                               type="number"
+                               min="0"
+                               step="0.01"
+                               class="form-control" />
+
+                        <span asp-validation-for="WaterReading"
+                              class="text-danger small"></span>
+                    </div>
+
+                </div>
+
+                <div class="alert alert-info mt-4">
+                    Enter the current cumulative meter values,
+                    not the monthly consumption.
+                </div>
+
+                <hr class="my-4" />
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-controller="MeterReading"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>
+                        Save Meter Reading
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>

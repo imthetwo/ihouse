@@ -243,3 +243,39 @@
         flex-direction: column;
     }
 }
+/* ========================================
+   ADMIN LAYOUT - HEADER, CONTENT, FOOTER
+======================================== */
+
+.admin-shell > .admin-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 100vh;
+}
+
+.admin-main > .admin-topbar {
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.admin-main > .admin-content {
+    width: 100%;
+    flex: 1 0 auto;
+    min-width: 0;
+}
+
+.admin-main > .admin-footer {
+    position: static;
+    display: block;
+    width: 100%;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 16px 24px;
+    text-align: center;
+    font-size: 13px;
+    color: #64748b;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    clear: both;
+}

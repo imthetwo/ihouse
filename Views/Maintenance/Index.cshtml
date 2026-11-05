@@ -1,0 +1,225 @@
+
+@model IEnumerable<ihouse.Models.MaintenanceRequest>
+@using ihouse.Models.Enums
+
+@{
+    ViewData["Title"] = "Maintenance Management";
+    Layout = "_AdminLayout";
+
+    var requests = Model.ToList();
+}
+
+<div class="container-fluid py-4">
+
+    <!-- NOTIFICATIONS -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- SUMMARY -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">
+                        Total Requests
+                    </p>
+
+                    <h2 class="fw-bold mb-0">
+                        @requests.Count
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">
+                        Pending Requests
+                    </p>
+
+                    <h2 class="fw-bold text-warning mb-0">
+                        @requests.Count(r => r.Status == MaintenanceRqStatus.Pending)
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">
+                        Completed Requests
+                    </p>
+
+                    <h2 class="fw-bold text-success mb-0">
+                        @requests.Count(r => r.Status == MaintenanceRqStatus.Completed)
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- REQUEST TABLE -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">
+                Maintenance Requests
+            </h5>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Room</th>
+                            <th>Tenant</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Created Date</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var request in requests)
+                        {
+                            <tr>
+                                <td>#@request.Id</td>
+
+                                <td>@request.Room.RoomNumber</td>
+
+                                <td>@request.Tenant.FullName</td>
+
+                                <td>@request.Description</td>
+
+                                <td>
+                                    @if (request.Status == MaintenanceRqStatus.Pending)
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            Pending
+                                        </span>
+                                    }
+                                    else if (request.Status == MaintenanceRqStatus.InProgress)
+                                    {
+                                        <span class="badge bg-primary">
+                                            In Progress
+                                        </span>
+                                    }
+                                    else if (request.Status == MaintenanceRqStatus.Completed)
+                                    {
+                                        <span class="badge bg-success">
+                                            Completed
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">
+                                            Rejected
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @request.CreatedAt.ToString("dd/MM/yyyy")
+                                </td>
+
+                                <td>
+                                    <div class="d-flex justify-content-end gap-2 flex-wrap">
+
+                                        <!-- DETAILS -->
+                                        <a asp-controller="Maintenance"
+                                           asp-action="Details"
+                                           asp-route-id="@request.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                            Details
+                                        </a>
+
+                                        @if (request.Status == MaintenanceRqStatus.Pending)
+                                        {
+                                            <!-- ACCEPT -->
+                                            <form asp-controller="Maintenance"
+                                                  asp-action="Accept"
+                                                  asp-route-id="@request.Id"
+                                                  method="post">
+
+                                                @Html.AntiForgeryToken()
+
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-success">
+                                                    Accept
+                                                </button>
+                                            </form>
+
+                                            <!-- REJECT -->
+                                            <form asp-controller="Maintenance"
+                                                  asp-action="Reject"
+                                                  asp-route-id="@request.Id"
+                                                  method="post"
+                                                  onsubmit="return confirm('Reject this request?');">
+
+                                                @Html.AntiForgeryToken()
+
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger">
+                                                    Reject
+                                                </button>
+                                            </form>
+                                        }
+
+                                        @if (request.Status == MaintenanceRqStatus.InProgress)
+                                        {
+                                            <!-- COMPLETE -->
+                                            <form asp-controller="Maintenance"
+                                                  asp-action="Complete"
+                                                  asp-route-id="@request.Id"
+                                                  method="post"
+                                                  onsubmit="return confirm('Mark this request as completed?');">
+
+                                                @Html.AntiForgeryToken()
+
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-primary">
+                                                    Complete
+                                                </button>
+                                            </form>
+                                        }
+
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+
+                        @if (!requests.Any())
+                        {
+                            <tr>
+                                <td colspan="7"
+                                    class="text-center text-muted py-5">
+                                    No maintenance requests found.
+                                </td>
+                            </tr>
+                        }
+
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+</div>

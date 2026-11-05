@@ -1,0 +1,315 @@
+
+using ihouse.Data;
+using ihouse.Models;
+using ihouse.Models.Enums;
+using ihouse.ViewModels.Contract;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+
+namespace ihouse.Controllers;
+
+[Authorize(Roles = "Admin,Staff")]
+public class ContractsController : Controller
+{
+    private readonly ApplicationDbContext _context;
+
+    public ContractsController(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    // GET: /Contracts
+    [HttpGet]
+    public async Task<IActionResult> Index()
+    {
+        var contracts = await _context.Contracts
+            .AsNoTracking()
+            .Include(c => c.Room)
+            .Include(c => c.ContractTenants)
+                .ThenInclude(ct => ct.Tenant)
+            .OrderByDescending(c => c.ContractStartDate)
+            .ToListAsync();
+
+        return View(contracts);
+    }
+
+    // GET: /Contracts/Create
+    [HttpGet]
+    public async Task<IActionResult> Create()
+    {
+        await LoadOptions();
+
+        return View(new ContractFormViewModel());
+    }
+
+    // POST: /Contracts/Create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(ContractFormViewModel model)
+    {
+        await ValidateContract(model);
+
+        if (!ModelState.IsValid)
+        {
+            await LoadOptions();
+            return View(model);
+        }
+
+        var contract = new Contract
+        {
+            RoomId = model.RoomId,
+            ContractStartDate = model.ContractStartDate,
+            ContractEndDate = model.ContractEndDate,
+            RentPrice = model.RentPrice,
+            DepositAmount = model.DepositAmount,
+            PaymentMethod = model.PaymentMethod,
+            Status = model.Status
+        };
+
+        contract.ContractTenants.Add(new ContractTenant
+        {
+            TenantId = model.PrimaryTenantId,
+            IsPrimaryTenant = true
+        });
+
+        _context.Contracts.Add(contract);
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Contract created successfully.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: /Contracts/Edit/5
+    [HttpGet]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var contract = await _context.Contracts
+            .AsNoTracking()
+            .Include(c => c.ContractTenants)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (contract == null)
+            return NotFound();
+
+        var model = new ContractFormViewModel
+        {
+            RoomId = contract.RoomId,
+            PrimaryTenantId = contract.ContractTenants
+                .Where(ct => ct.IsPrimaryTenant)
+                .Select(ct => ct.TenantId)
+                .FirstOrDefault(),
+
+            ContractStartDate = contract.ContractStartDate,
+            ContractEndDate = contract.ContractEndDate,
+            RentPrice = contract.RentPrice,
+            DepositAmount = contract.DepositAmount,
+            PaymentMethod = contract.PaymentMethod,
+            Status = contract.Status
+        };
+
+        await LoadOptions();
+
+        return View(model);
+    }
+
+    // POST: /Contracts/Edit/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(
+        int id,
+        ContractFormViewModel model)
+    {
+        var contract = await _context.Contracts
+            .Include(c => c.ContractTenants)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (contract == null)
+            return NotFound();
+
+        if (contract.Status == ContractStatus.Terminated)
+        {
+            TempData["Error"] = "Terminated contracts cannot be edited.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        await ValidateContract(model, id);
+
+        if (!ModelState.IsValid)
+        {
+            await LoadOptions();
+            return View(model);
+        }
+
+        // Only the primary tenant is edited here.
+        var oldPrimary = contract.ContractTenants
+            .FirstOrDefault(ct => ct.IsPrimaryTenant);
+
+        if (oldPrimary != null &&
+            oldPrimary.TenantId != model.PrimaryTenantId)
+        {
+            _context.ContractTenants.Remove(oldPrimary);
+        }
+
+        var newPrimary = contract.ContractTenants
+            .FirstOrDefault(ct =>
+                ct.TenantId == model.PrimaryTenantId);
+
+        if (newPrimary == null)
+        {
+            contract.ContractTenants.Add(new ContractTenant
+            {
+                TenantId = model.PrimaryTenantId,
+                IsPrimaryTenant = true
+            });
+        }
+        else
+        {
+            newPrimary.IsPrimaryTenant = true;
+        }
+
+        contract.RoomId = model.RoomId;
+        contract.ContractStartDate = model.ContractStartDate;
+        contract.ContractEndDate = model.ContractEndDate;
+        contract.RentPrice = model.RentPrice;
+        contract.DepositAmount = model.DepositAmount;
+        contract.PaymentMethod = model.PaymentMethod;
+        contract.Status = model.Status;
+
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Contract updated successfully.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: /Contracts/Details/5
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        var contract = await _context.Contracts
+            .AsNoTracking()
+            .Include(c => c.Room)
+            .Include(c => c.ContractTenants)
+                .ThenInclude(ct => ct.Tenant)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (contract == null)
+            return NotFound();
+
+        return View(contract);
+    }
+
+    // POST: /Contracts/Terminate/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Terminate(int id)
+    {
+        var contract = await _context.Contracts.FindAsync(id);
+
+        if (contract == null)
+            return NotFound();
+
+        if (contract.Status == ContractStatus.Terminated)
+        {
+            TempData["Error"] = "Contract is already terminated.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        contract.Status = ContractStatus.Terminated;
+
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Contract terminated successfully.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    // Populate room and tenant dropdowns
+    private async Task LoadOptions()
+    {
+        var rooms = await _context.Rooms
+            .AsNoTracking()
+            .OrderBy(r => r.RoomNumber)
+            .ToListAsync();
+
+        var tenants = await _context.Tenants
+            .AsNoTracking()
+            .OrderBy(t => t.FullName)
+            .ToListAsync();
+
+        ViewBag.RoomOptions = new SelectList(
+            rooms, "Id", "RoomNumber");
+
+        ViewBag.TenantOptions = new SelectList(
+            tenants, "Id", "FullName");
+    }
+
+    // Basic business validation
+    private async Task ValidateContract(
+        ContractFormViewModel model,
+        int? currentId = null)
+    {
+        if (model.ContractEndDate <= model.ContractStartDate)
+        {
+            ModelState.AddModelError(
+                nameof(model.ContractEndDate),
+                "End date must be after start date.");
+        }
+
+        var room = await _context.Rooms
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == model.RoomId);
+
+        if (room == null)
+        {
+            ModelState.AddModelError(
+                nameof(model.RoomId),
+                "Selected room does not exist.");
+        }
+        else if (model.Status == ContractStatus.Active &&
+                 room.Status == RoomStatus.Maintenance)
+        {
+            ModelState.AddModelError(
+                nameof(model.RoomId),
+                "A room under maintenance cannot have an active contract.");
+        }
+
+        bool tenantExists = await _context.Tenants
+            .AnyAsync(t => t.Id == model.PrimaryTenantId);
+
+        if (!tenantExists)
+        {
+            ModelState.AddModelError(
+                nameof(model.PrimaryTenantId),
+                "Selected tenant does not exist.");
+        }
+
+        if (model.Status == ContractStatus.Terminated &&
+            currentId == null)
+        {
+            ModelState.AddModelError(
+                nameof(model.Status),
+                "New contracts cannot start as Terminated.");
+        }
+
+        if (model.Status == ContractStatus.Active)
+        {
+            bool overlaps = await _context.Contracts.AnyAsync(c =>
+                c.RoomId == model.RoomId &&
+                c.Status == ContractStatus.Active &&
+                (!currentId.HasValue || c.Id != currentId.Value) &&
+                c.ContractStartDate <= model.ContractEndDate &&
+                c.ContractEndDate >= model.ContractStartDate);
+
+            if (overlaps)
+            {
+                ModelState.AddModelError(
+                    nameof(model.RoomId),
+                    "This room already has an active contract for these dates.");
+            }
+        }
+    }
+}

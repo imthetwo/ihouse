@@ -96,6 +96,19 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+
+// ================= SEED DEMO ROOMS =================
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+
+    var db = scope.ServiceProvider
+        .GetRequiredService<ApplicationDbContext>();
+
+    await DataRoomImages.SeedAsync(db);
+}
+
 // ================= ERROR HANDLING =================
 
 if (!app.Environment.IsDevelopment())

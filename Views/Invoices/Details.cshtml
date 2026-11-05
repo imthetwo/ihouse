@@ -1,0 +1,189 @@
+
+@model ihouse.Models.Invoice
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Invoice Details";
+    Layout = "_AdminLayout";
+
+    var usd = CultureInfo.GetCultureInfo("en-US");
+    var paidAmount = Model.Payments.Sum(p => p.Amount);
+    var balance = Model.TotalAmount - paidAmount;
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a asp-controller="Invoice" asp-action="Index"
+               class="text-decoration-none text-muted">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Invoices
+            </a>
+            <h4 class="fw-bold mt-3 mb-1">
+                Invoice #@Model.Id
+            </h4>
+            <p class="text-muted mb-0">
+                Contract #@Model.ContractId
+            </p>
+        </div>
+
+        <span class="badge bg-primary-subtle text-primary fs-6">
+            @Model.Status
+        </span>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">Total Amount</p>
+                    <h4 class="fw-bold">
+                        @Model.TotalAmount.ToString("C2", usd)
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">Amount Paid</p>
+                    <h4 class="fw-bold text-success">
+                        @paidAmount.ToString("C2", usd)
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">Remaining Balance</p>
+                    <h4 class="fw-bold text-danger">
+                        @balance.ToString("C2", usd)
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">Invoice Information</h5>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <span class="text-muted">Invoice Date:</span>
+                    <strong>
+                        @Model.InvoiceDate.ToString("dd/MM/yyyy")
+                    </strong>
+                </div>
+
+                <div class="col-md-6">
+                    <span class="text-muted">Due Date:</span>
+                    <strong>
+                        @Model.DueDate.ToString("dd/MM/yyyy")
+                    </strong>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">Invoice Items</h5>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in Model.InvoiceItems)
+                        {
+                            <tr>
+                                <td>@item.ItemType</td>
+                                <td>@(item.Description ?? "-")</td>
+                                <td>@item.Quantity.ToString("N2")</td>
+                                <td>@item.UnitPrice.ToString("C2", usd)</td>
+                                <td class="fw-semibold">
+                                    @item.Amount.ToString("C2", usd)
+                                </td>
+                            </tr>
+                        }
+
+                        @if (!Model.InvoiceItems.Any())
+                        {
+                            <tr>
+                                <td colspan="5"
+                                    class="text-center text-muted py-4">
+                                    No invoice items found.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">Payment History</h5>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Method</th>
+                            <th>Transaction Code</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var payment in Model.Payments)
+                        {
+                            <tr>
+                                <td>
+                                    @payment.PaymentDate.ToString("dd/MM/yyyy")
+                                </td>
+                                <td>@payment.PaymentMethod</td>
+                                <td>@(payment.TransactionCode ?? "-")</td>
+                                <td class="fw-semibold">
+                                    @payment.Amount.ToString("C2", usd)
+                                </td>
+                            </tr>
+                        }
+
+                        @if (!Model.Payments.Any())
+                        {
+                            <tr>
+                                <td colspan="4"
+                                    class="text-center text-muted py-4">
+                                    No payments recorded.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+</div>

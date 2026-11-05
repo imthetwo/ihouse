@@ -9,6 +9,6 @@ public class TenantDashboardController : Controller
     [HttpGet]
     public IActionResult Index()
     {
-        return Content("Welcome to Tenant Dashboard!");
+        return View();
     }
 }

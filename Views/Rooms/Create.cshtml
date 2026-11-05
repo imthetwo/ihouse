@@ -1,0 +1,190 @@
+
+@model ihouse.ViewModels.Room.RoomFormViewModel
+@using ihouse.Models.Enums
+
+@{
+    ViewData["Title"] = "Add New Room";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <h4 class="fw-bold mb-1">Add New Room</h4>
+            <p class="text-muted mb-4">
+                Enter the information below to create a new room.
+            </p>
+
+            <form asp-controller="Rooms"
+                  asp-action="Create"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="All"
+                     class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+
+                    <!-- ROOM NUMBER -->
+                    <div class="col-md-6">
+                        <label asp-for="RoomNumber"
+                               class="form-label fw-semibold">
+                            Room Number
+                        </label>
+
+                        <input asp-for="RoomNumber"
+                               class="form-control"
+                               placeholder="Example: A101" />
+
+                        <span asp-validation-for="RoomNumber"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- ROOM TYPE -->
+                    <div class="col-md-6">
+                        <label asp-for="RoomType"
+                               class="form-label fw-semibold">
+                            Room Type
+                        </label>
+
+                        <input asp-for="RoomType"
+                               class="form-control"
+                               placeholder="Example: Studio" />
+
+                        <span asp-validation-for="RoomType"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- FLOOR -->
+                    <div class="col-md-6">
+                        <label asp-for="Floor"
+                               class="form-label fw-semibold">
+                            Floor
+                        </label>
+
+                        <input asp-for="Floor"
+                               type="number"
+                               min="1"
+                               max="150"
+                               class="form-control" />
+
+                        <span asp-validation-for="Floor"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- CAPACITY -->
+                    <div class="col-md-6">
+                        <label asp-for="Capacity"
+                               class="form-label fw-semibold">
+                            Capacity
+                        </label>
+
+                        <input asp-for="Capacity"
+                               type="number"
+                               min="1"
+                               max="5"
+                               class="form-control" />
+
+                        <span asp-validation-for="Capacity"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- MONTHLY RENT -->
+                    <div class="col-md-6">
+                        <label asp-for="RentPrice"
+                               class="form-label fw-semibold">
+                            Monthly Rent (USD)
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+
+                            <input asp-for="RentPrice"
+                                   type="number"
+                                   min="0"
+                                   max="1000000000"
+                                   step="0.01"
+                                   class="form-control" />
+                        </div>
+
+                        <span asp-validation-for="RentPrice"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- STATUS -->
+                    <div class="col-md-6">
+                        <label asp-for="Status"
+                               class="form-label fw-semibold">
+                            Status
+                        </label>
+
+                        <select asp-for="Status"
+                                asp-items="Html.GetEnumSelectList<RoomStatus>()"
+                                class="form-select">
+                        </select>
+
+                        <span asp-validation-for="Status"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- DESCRIPTION -->
+                    <div class="col-12">
+                        <label asp-for="Description"
+                               class="form-label fw-semibold">
+                            Description
+                        </label>
+
+                        <textarea asp-for="Description"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="Enter room description..."></textarea>
+
+                        <span asp-validation-for="Description"
+                              class="text-danger small"></span>
+                    </div>
+
+                    <!-- IMAGE URL -->
+                    <div class="col-12">
+                        <label asp-for="ImageUrl"
+                               class="form-label fw-semibold">
+                            Image URL
+                        </label>
+
+                        <input asp-for="ImageUrl"
+                               type="url"
+                               class="form-control"
+                               placeholder="https://example.com/room.jpg" />
+
+                        <span asp-validation-for="ImageUrl"
+                              class="text-danger small"></span>
+                    </div>
+
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
+
+                    <a asp-controller="Rooms"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>
+                        Save Room
+                    </button>
+
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

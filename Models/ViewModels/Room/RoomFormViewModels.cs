@@ -6,19 +6,19 @@ namespace ihouse.ViewModels.Room;
 
 public class RoomFormViewModel
 {
-    [Required]
+    [Required(ErrorMessage = "Room number is required.")]
     [StringLength(20)]
     public string RoomNumber { get; set; } = string.Empty;
 
     [Range(1, 150)]
-    public int Floor { get; set; } = 1;
+    public int Floor { get; set; }
 
-    [Required]
+    [Required(ErrorMessage = "Room type is required.")]
     [StringLength(50)]
     public string RoomType { get; set; } = string.Empty;
 
     [Range(1, 5)]
-    public int Capacity { get; set; } = 1;
+    public int Capacity { get; set; }
 
     [Range(typeof(decimal), "0", "1000000000")]
     public decimal RentPrice { get; set; }
