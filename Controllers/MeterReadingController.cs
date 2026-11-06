@@ -19,7 +19,10 @@ public class MeterReadingController : Controller
         _context = context;
     }
 
-    // GET: /MeterReading
+    // ==========================================
+    // INDEX - ADMIN & STAFF
+    // ==========================================
+
     [HttpGet]
     public async Task<IActionResult> Index()
     {
@@ -33,7 +36,10 @@ public class MeterReadingController : Controller
         return View(readings);
     }
 
-    // GET: /MeterReading/Create
+    // ==========================================
+    // CREATE - ADMIN & STAFF
+    // ==========================================
+
     [HttpGet]
     public async Task<IActionResult> Create()
     {
@@ -42,7 +48,6 @@ public class MeterReadingController : Controller
         return View(new MeterReadingFormViewModel());
     }
 
-    // POST: /MeterReading/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
@@ -66,14 +71,32 @@ public class MeterReadingController : Controller
 
         _context.MeterReadings.Add(reading);
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Meter reading created successfully.";
+            TempData["Success"] =
+                "Meter reading created successfully.";
 
-        return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index));
+        }
+        catch (DbUpdateException)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "Unable to save the meter reading. " +
+                "Please check the data and try again.");
+
+            await LoadRoomsAsync();
+            return View(model);
+        }
     }
 
-    // GET: /MeterReading/Edit/5
+    // ==========================================
+    // EDIT - ADMIN ONLY
+    // ==========================================
+
+    [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
@@ -82,9 +105,7 @@ public class MeterReadingController : Controller
             .FirstOrDefaultAsync(r => r.Id == id);
 
         if (reading == null)
-        {
             return NotFound();
-        }
 
         var model = new MeterReadingFormViewModel
         {
@@ -99,19 +120,18 @@ public class MeterReadingController : Controller
         return View(model);
     }
 
-    // POST: /MeterReading/Edit/5
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
         int id,
         MeterReadingFormViewModel model)
     {
-        var reading = await _context.MeterReadings.FindAsync(id);
+        var reading = await _context.MeterReadings
+            .FirstOrDefaultAsync(r => r.Id == id);
 
         if (reading == null)
-        {
             return NotFound();
-        }
 
         await ValidateReadingAsync(model, id);
 
@@ -126,36 +146,63 @@ public class MeterReadingController : Controller
         reading.ElectricityReading = model.ElectricityReading;
         reading.WaterReading = model.WaterReading;
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Meter reading updated successfully.";
+            TempData["Success"] =
+                "Meter reading updated successfully.";
 
-        return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index));
+        }
+        catch (DbUpdateException)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "Unable to update the meter reading.");
+
+            await LoadRoomsAsync();
+            return View(model);
+        }
     }
 
-    // POST: /MeterReading/Delete/5
-    [HttpPost]
+    // ==========================================
+    // DELETE - ADMIN ONLY
+    // ==========================================
+
     [Authorize(Roles = "Admin")]
+    [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var reading = await _context.MeterReadings.FindAsync(id);
+        var reading = await _context.MeterReadings
+            .FirstOrDefaultAsync(r => r.Id == id);
 
         if (reading == null)
-        {
             return NotFound();
-        }
 
         _context.MeterReadings.Remove(reading);
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Meter reading deleted successfully.";
+            TempData["Success"] =
+                "Meter reading deleted successfully.";
+        }
+        catch (DbUpdateException)
+        {
+            TempData["Error"] =
+                "Unable to delete this meter reading.";
+        }
 
         return RedirectToAction(nameof(Index));
     }
 
-    // LOAD ROOM DROPDOWN
+    // ==========================================
+    // LOAD ROOM OPTIONS
+    // ==========================================
+
     private async Task LoadRoomsAsync()
     {
         ViewBag.RoomOptions = await _context.Rooms
@@ -169,12 +216,19 @@ public class MeterReadingController : Controller
             .ToListAsync();
     }
 
-    // VALIDATE READING DATA
+    // ==========================================
+    // VALIDATE METER READINGS
+    // ==========================================
+
     private async Task ValidateReadingAsync(
         MeterReadingFormViewModel model,
         int? excludeId = null)
     {
-        if (!await _context.Rooms.AnyAsync(r => r.Id == model.RoomId))
+        // 1. Check room
+        bool roomExists = await _context.Rooms
+            .AnyAsync(r => r.Id == model.RoomId);
+
+        if (!roomExists)
         {
             ModelState.AddModelError(
                 nameof(model.RoomId),
@@ -183,6 +237,7 @@ public class MeterReadingController : Controller
             return;
         }
 
+        // 2. Check reading date
         if (model.ReadingDay == default)
         {
             ModelState.AddModelError(
@@ -192,11 +247,13 @@ public class MeterReadingController : Controller
             return;
         }
 
-        var sameDateExists = await _context.MeterReadings
+        // 3. Prevent duplicate readings for the same date
+        bool sameDateExists = await _context.MeterReadings
             .AnyAsync(r =>
                 r.RoomId == model.RoomId &&
                 r.ReadingDay == model.ReadingDay &&
-                (!excludeId.HasValue || r.Id != excludeId.Value));
+                (!excludeId.HasValue ||
+                 r.Id != excludeId.Value));
 
         if (sameDateExists)
         {
@@ -207,12 +264,14 @@ public class MeterReadingController : Controller
             return;
         }
 
+        // 4. Check previous reading
         var previousReading = await _context.MeterReadings
             .AsNoTracking()
             .Where(r =>
                 r.RoomId == model.RoomId &&
                 r.ReadingDay < model.ReadingDay &&
-                (!excludeId.HasValue || r.Id != excludeId.Value))
+                (!excludeId.HasValue ||
+                 r.Id != excludeId.Value))
             .OrderByDescending(r => r.ReadingDay)
             .FirstOrDefaultAsync();
 
@@ -223,7 +282,8 @@ public class MeterReadingController : Controller
             {
                 ModelState.AddModelError(
                     nameof(model.ElectricityReading),
-                    "Electricity reading cannot be lower than the previous reading.");
+                    "Electricity reading cannot be lower " +
+                    "than the previous reading.");
             }
 
             if (model.WaterReading <
@@ -231,16 +291,19 @@ public class MeterReadingController : Controller
             {
                 ModelState.AddModelError(
                     nameof(model.WaterReading),
-                    "Water reading cannot be lower than the previous reading.");
+                    "Water reading cannot be lower " +
+                    "than the previous reading.");
             }
         }
 
+        // 5. Check next reading
         var nextReading = await _context.MeterReadings
             .AsNoTracking()
             .Where(r =>
                 r.RoomId == model.RoomId &&
                 r.ReadingDay > model.ReadingDay &&
-                (!excludeId.HasValue || r.Id != excludeId.Value))
+                (!excludeId.HasValue ||
+                 r.Id != excludeId.Value))
             .OrderBy(r => r.ReadingDay)
             .FirstOrDefaultAsync();
 
@@ -251,7 +314,8 @@ public class MeterReadingController : Controller
             {
                 ModelState.AddModelError(
                     nameof(model.ElectricityReading),
-                    "Electricity reading cannot exceed the next reading.");
+                    "Electricity reading cannot exceed " +
+                    "the next reading.");
             }
 
             if (model.WaterReading >
@@ -259,7 +323,8 @@ public class MeterReadingController : Controller
             {
                 ModelState.AddModelError(
                     nameof(model.WaterReading),
-                    "Water reading cannot exceed the next reading.");
+                    "Water reading cannot exceed " +
+                    "the next reading.");
             }
         }
     }

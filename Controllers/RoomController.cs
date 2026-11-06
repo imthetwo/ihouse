@@ -18,7 +18,10 @@ public class RoomsController : Controller
         _context = context;
     }
 
-    // READ - List all rooms
+    // ==========================================
+    // INDEX - ADMIN & STAFF
+    // ==========================================
+
     [HttpGet]
     public async Task<IActionResult> Index()
     {
@@ -30,27 +33,34 @@ public class RoomsController : Controller
         return View(rooms);
     }
 
-    // CREATE - Show form
+    // ==========================================
+    // CREATE - ADMIN ONLY
+    // ==========================================
+
+    [Authorize(Roles = "Admin")]
     [HttpGet]
     public IActionResult Create()
     {
         return View(new RoomFormViewModel());
     }
 
-    // CREATE - Save to database
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(RoomFormViewModel model)
+    public async Task<IActionResult> Create(
+        RoomFormViewModel model)
     {
         ValidateInput(model);
 
         if (!ModelState.IsValid)
             return View(model);
 
-        var number = model.RoomNumber.Trim();
+        string roomNumber = model.RoomNumber.Trim();
 
-        bool exists = await _context.Rooms.AnyAsync(r =>
-            r.RoomNumber.ToLower() == number.ToLower());
+        bool exists = await _context.Rooms
+            .AnyAsync(r =>
+                r.RoomNumber.ToLower() ==
+                roomNumber.ToLower());
 
         if (exists)
         {
@@ -63,7 +73,7 @@ public class RoomsController : Controller
 
         var room = new Room
         {
-            RoomNumber = number,
+            RoomNumber = roomNumber,
             Floor = model.Floor,
             RoomType = model.RoomType.Trim(),
             Capacity = model.Capacity,
@@ -74,18 +84,26 @@ public class RoomsController : Controller
         };
 
         _context.Rooms.Add(room);
+
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Room created successfully.";
+        TempData["Success"] =
+            "Room created successfully.";
 
         return RedirectToAction(nameof(Index));
     }
 
-    // UPDATE - Show edit form
+    // ==========================================
+    // EDIT - ADMIN ONLY
+    // ==========================================
+
+    [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
-        var room = await _context.Rooms.FindAsync(id);
+        var room = await _context.Rooms
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == id);
 
         if (room == null)
             return NotFound();
@@ -105,7 +123,7 @@ public class RoomsController : Controller
         return View(model);
     }
 
-    // UPDATE - Save changes
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
@@ -117,16 +135,19 @@ public class RoomsController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var room = await _context.Rooms.FindAsync(id);
+        var room = await _context.Rooms
+            .FirstOrDefaultAsync(r => r.Id == id);
 
         if (room == null)
             return NotFound();
 
-        var number = model.RoomNumber.Trim();
+        string roomNumber = model.RoomNumber.Trim();
 
-        bool exists = await _context.Rooms.AnyAsync(r =>
-            r.Id != id &&
-            r.RoomNumber.ToLower() == number.ToLower());
+        bool exists = await _context.Rooms
+            .AnyAsync(r =>
+                r.Id != id &&
+                r.RoomNumber.ToLower() ==
+                roomNumber.ToLower());
 
         if (exists)
         {
@@ -137,7 +158,7 @@ public class RoomsController : Controller
             return View(model);
         }
 
-        room.RoomNumber = number;
+        room.RoomNumber = roomNumber;
         room.Floor = model.Floor;
         room.RoomType = model.RoomType.Trim();
         room.Capacity = model.Capacity;
@@ -148,28 +169,40 @@ public class RoomsController : Controller
 
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Room updated successfully.";
+        TempData["Success"] =
+            "Room updated successfully.";
 
         return RedirectToAction(nameof(Index));
     }
 
-    // DELETE - Admin only
+    // ==========================================
+    // DELETE - ADMIN ONLY
+    // ==========================================
+
     [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var room = await _context.Rooms.FindAsync(id);
+        var room = await _context.Rooms
+            .FirstOrDefaultAsync(r => r.Id == id);
 
         if (room == null)
             return NotFound();
 
-        // Prevent deleting a room with related records
+        // Protect related rental data.
         bool hasRelatedData =
-            await _context.Contracts.AnyAsync(c => c.RoomId == id) ||
-            await _context.RoomServices.AnyAsync(s => s.RoomId == id) ||
-            await _context.MeterReadings.AnyAsync(m => m.RoomId == id) ||
-            await _context.MaintenanceRequests.AnyAsync(m => m.RoomId == id);
+            await _context.Contracts
+                .AnyAsync(c => c.RoomId == id)
+            ||
+            await _context.RoomServices
+                .AnyAsync(s => s.RoomId == id)
+            ||
+            await _context.MeterReadings
+                .AnyAsync(m => m.RoomId == id)
+            ||
+            await _context.MaintenanceRequests
+                .AnyAsync(m => m.RoomId == id);
 
         if (hasRelatedData)
         {
@@ -184,7 +217,9 @@ public class RoomsController : Controller
         try
         {
             await _context.SaveChangesAsync();
-            TempData["Success"] = "Room deleted successfully.";
+
+            TempData["Success"] =
+                "Room deleted successfully.";
         }
         catch (DbUpdateException)
         {
@@ -194,6 +229,10 @@ public class RoomsController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
+    // ==========================================
+    // VALIDATION
+    // ==========================================
 
     private void ValidateInput(RoomFormViewModel model)
     {

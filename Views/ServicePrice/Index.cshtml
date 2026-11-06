@@ -16,76 +16,117 @@
 
 <div class="container-fluid py-4">
 
-    <!-- ACTIONS -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <!-- PAGE HEADER -->
+    <div class="admin-page-header">
 
-        <div>
-            <h4 class="fw-bold mb-1">
-                Service Price Management
-            </h4>
+        <h4 class="admin-page-title">
+            Service Price Management
+        </h4>
 
-            <p class="text-muted mb-0">
-                Manage electricity, water and additional service pricing.
-            </p>
-        </div>
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-controller="ServicePrice"
+               asp-action="Create"
+               class="btn btn-primary">
 
-        <a asp-controller="ServicePrice"
-           asp-action="Create"
-           class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>
-            Add Service Price
-        </a>
+                <i class="bi bi-plus-lg me-1"></i>
+                Add Service Price
+
+            </a>
+        }
 
     </div>
 
     <!-- NOTIFICATIONS -->
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show"
+             role="alert">
+
             @TempData["Success"]
+
             <button type="button"
                     class="btn-close"
-                    data-bs-dismiss="alert"></button>
+                    data-bs-dismiss="alert"
+                    aria-label="Close">
+            </button>
+
         </div>
     }
 
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show"
+             role="alert">
+
             @TempData["Error"]
+
             <button type="button"
                     class="btn-close"
-                    data-bs-dismiss="alert"></button>
+                    data-bs-dismiss="alert"
+                    aria-label="Close">
+            </button>
+
         </div>
     }
 
-    <!-- SUMMARY -->
+    <!-- SUMMARY CARDS -->
     <div class="row g-3 mb-4">
 
-        <div class="col-md-4">
+        <!-- TOTAL -->
+        <div class="col-12 col-md-4">
             <div class="card border-0 shadow-sm h-100">
+
                 <div class="card-body p-4">
-                    <p class="text-muted mb-2">Total Service Prices</p>
-                    <h2 class="fw-bold mb-0">@totalPrices</h2>
+
+                    <p class="text-muted mb-2">
+                        Total Service Prices
+                    </p>
+
+                    <h2 class="fw-bold mb-0">
+                        @totalPrices
+                    </h2>
+
                 </div>
+
             </div>
         </div>
 
-        <div class="col-md-4">
+        <!-- ACTIVE -->
+        <div class="col-12 col-md-4">
             <div class="card border-0 shadow-sm h-100">
+
                 <div class="card-body p-4">
-                    <p class="text-muted mb-2">Active Prices</p>
-                    <h2 class="fw-bold text-success mb-0">@activePrices</h2>
+
+                    <p class="text-muted mb-2">
+                        Active Prices
+                    </p>
+
+                    <h2 class="fw-bold text-success mb-0">
+                        @activePrices
+                    </h2>
+
                 </div>
+
             </div>
         </div>
 
-        <div class="col-md-4">
+        <!-- INACTIVE -->
+        <div class="col-12 col-md-4">
             <div class="card border-0 shadow-sm h-100">
+
                 <div class="card-body p-4">
-                    <p class="text-muted mb-2">Inactive Prices</p>
-                    <h2 class="fw-bold text-secondary mb-0">@inactivePrices</h2>
+
+                    <p class="text-muted mb-2">
+                        Inactive Prices
+                    </p>
+
+                    <h2 class="fw-bold text-secondary mb-0">
+                        @inactivePrices
+                    </h2>
+
                 </div>
+
             </div>
         </div>
 
@@ -93,19 +134,28 @@
 
     <!-- SERVICE PRICE TABLE -->
     <div class="card border-0 shadow-sm">
+
         <div class="card-body p-4">
 
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0">Service Pricing</h5>
+            <!-- TABLE HEADER -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+
+                <h5 class="fw-bold mb-0">
+                    Service Pricing
+                </h5>
+
                 <span class="text-muted small">
                     @totalPrices records
                 </span>
+
             </div>
 
+            <!-- TABLE -->
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
 
-                    <thead class="table-light">
+                <table class="table align-middle">
+
+                    <thead>
                         <tr>
                             <th>Service Type</th>
                             <th>Unit Price</th>
@@ -117,23 +167,27 @@
                     </thead>
 
                     <tbody>
+
                         @foreach (var price in prices)
                         {
                             <tr>
-                                <td>
-                                    <span class="fw-semibold">
-                                        @price.ServiceType
-                                    </span>
+
+                                <!-- SERVICE TYPE -->
+                                <td class="fw-semibold">
+                                    @price.ServiceType
                                 </td>
 
+                                <!-- UNIT PRICE -->
                                 <td class="fw-semibold">
                                     @price.Price.ToString("C2", usd)
                                 </td>
 
+                                <!-- EFFECTIVE FROM -->
                                 <td>
                                     @price.EffectiveFrom.ToString("dd/MM/yyyy")
                                 </td>
 
+                                <!-- EFFECTIVE TO -->
                                 <td>
                                     @if (price.EffectiveTo.HasValue)
                                     {
@@ -141,11 +195,15 @@
                                     }
                                     else
                                     {
-                                        <span class="text-muted">No end date</span>
+                                        <span class="text-muted">
+                                            No end date
+                                        </span>
                                     }
                                 </td>
 
+                                <!-- STATUS -->
                                 <td>
+
                                     @if (price.IsActive)
                                     {
                                         <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2">
@@ -158,21 +216,28 @@
                                             Inactive
                                         </span>
                                     }
+
                                 </td>
 
+                                <!-- ACTIONS -->
                                 <td class="text-end">
-                                    <div class="d-inline-flex gap-2">
 
-                                        <a asp-controller="ServicePrice"
-                                           asp-action="Edit"
-                                           asp-route-id="@price.Id"
-                                           class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-pencil-square me-1"></i>
-                                            Edit
-                                        </a>
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <div class="d-inline-flex gap-2">
 
-                                        @if (User.IsInRole("Admin"))
-                                        {
+                                            <!-- EDIT -->
+                                            <a asp-controller="ServicePrice"
+                                               asp-action="Edit"
+                                               asp-route-id="@price.Id"
+                                               class="btn btn-sm btn-outline-primary">
+
+                                                <i class="bi bi-pencil-square me-1"></i>
+                                                Edit
+
+                                            </a>
+
+                                            <!-- DELETE -->
                                             <form asp-controller="ServicePrice"
                                                   asp-action="Delete"
                                                   asp-route-id="@price.Id"
@@ -184,33 +249,50 @@
 
                                                 <button type="submit"
                                                         class="btn btn-sm btn-outline-danger">
+
                                                     <i class="bi bi-trash me-1"></i>
                                                     Delete
-                                                </button>
-                                            </form>
-                                        }
 
-                                    </div>
+                                                </button>
+
+                                            </form>
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">
+                                            View only
+                                        </span>
+                                    }
+
                                 </td>
+
                             </tr>
                         }
 
+                        <!-- EMPTY STATE -->
                         @if (totalPrices == 0)
                         {
                             <tr>
                                 <td colspan="6"
                                     class="text-center text-muted py-5">
-                                    <i class="bi bi-tags fs-1 d-block mb-2"></i>
+
+                                    <i class="bi bi-tags fs-2 d-block mb-3"></i>
                                     No service prices available.
+
                                 </td>
                             </tr>
                         }
+
                     </tbody>
 
                 </table>
+
             </div>
 
         </div>
+
     </div>
 
 </div>

@@ -4,27 +4,31 @@
 @{
     ViewData["Title"] = "Meter Reading Management";
     Layout = "_AdminLayout";
+
     var readings = Model.ToList();
 }
 
 <div class="container-fluid py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div>
-            <h4 class="fw-bold mb-1">Meter Reading Management</h4>
-            <p class="text-muted mb-0">
-                Manage electricity and water meter readings.
-            </p>
-        </div>
+    
+<!-- PAGE HEADER -->
+<div class="admin-page-header">
 
-        <a asp-controller="MeterReading"
-           asp-action="Create"
-           class="btn btn-primary">
-            <i class="bi bi-plus-lg me-2"></i>
-            Add Meter Reading
-        </a>
-    </div>
+    <h4 class="admin-page-title">
+        Meter Reading Management
+    </h4>
 
+    <a asp-controller="MeterReading"
+       asp-action="Create"
+       class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>
+        Add Meter Reading
+    </a>
+
+</div>
+
+
+    <!-- NOTIFICATIONS -->
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success">
@@ -39,24 +43,54 @@
         </div>
     }
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <p class="text-muted mb-2">Total Meter Readings</p>
-                    <h2 class="fw-bold mb-0">@readings.Count</h2>
-                </div>
+    <!-- SUMMARY AND ADD BUTTON -->
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+
+        <!-- TOTAL METER READINGS -->
+        <div class="card border-0 shadow-sm"
+             style="width: 100%; max-width: 500px;">
+
+            <div class="card-body p-4">
+
+                <p class="text-muted mb-2">
+                    Total Meter Readings
+                </p>
+
+                <h2 class="fw-bold mb-0">
+                    @readings.Count
+                </h2>
+
             </div>
+
         </div>
+
+       
+
     </div>
 
+    <!-- METER READING RECORDS -->
     <div class="card border-0 shadow-sm">
+
         <div class="card-body p-4">
 
-            <h5 class="fw-bold mb-3">Meter Reading Records</h5>
+            <!-- TABLE HEADER -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
 
+                <h5 class="fw-bold mb-0">
+                    Meter Reading Records
+                </h5>
+
+                <span class="text-muted small">
+                    @readings.Count records
+                </span>
+
+            </div>
+
+            <!-- TABLE -->
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+
+                <table class="table align-middle">
+
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -69,61 +103,104 @@
                     </thead>
 
                     <tbody>
+
                         @foreach (var reading in readings)
                         {
                             <tr>
-                                <td>#@reading.Id</td>
-                                <td>@reading.Room.RoomNumber</td>
-                                <td>@reading.ReadingDay.ToString("dd/MM/yyyy")</td>
-                                <td>@reading.ElectricityReading.ToString("N2")</td>
-                                <td>@reading.WaterReading.ToString("N2")</td>
 
                                 <td>
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a asp-controller="MeterReading"
-                                           asp-action="Edit"
-                                           asp-route-id="@reading.Id"
-                                           class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-pencil-square"></i>
-                                            Edit
-                                        </a>
+                                    #@reading.Id
+                                </td>
 
-                                        @if (User.IsInRole("Admin"))
-                                        {
+                                <td class="fw-semibold">
+                                    @(reading.Room?.RoomNumber ?? "Unknown")
+                                </td>
+
+                                <td>
+                                    @reading.ReadingDay.ToString("dd/MM/yyyy")
+                                </td>
+
+                                <td>
+                                    @reading.ElectricityReading.ToString("N2")
+                                </td>
+
+                                <td>
+                                    @reading.WaterReading.ToString("N2")
+                                </td>
+
+                                <!-- ACTIONS -->
+                                <td class="text-end">
+
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <div class="d-inline-flex gap-2">
+
+                                            <a asp-controller="MeterReading"
+                                               asp-action="Edit"
+                                               asp-route-id="@reading.Id"
+                                               class="btn btn-sm btn-outline-primary">
+
+                                                <i class="bi bi-pencil-square me-1"></i>
+                                                Edit
+
+                                            </a>
+
                                             <form asp-controller="MeterReading"
                                                   asp-action="Delete"
                                                   asp-route-id="@reading.Id"
                                                   method="post"
+                                                  class="d-inline"
                                                   onsubmit="return confirm('Delete this meter reading?');">
 
                                                 @Html.AntiForgeryToken()
 
-                                                <button class="btn btn-sm btn-outline-danger"
-                                                        type="submit">
-                                                    <i class="bi bi-trash"></i>
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger">
+
+                                                    <i class="bi bi-trash me-1"></i>
                                                     Delete
+
                                                 </button>
+
                                             </form>
-                                        }
-                                    </div>
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">
+                                            View only
+                                        </span>
+                                    }
+
                                 </td>
+
                             </tr>
                         }
 
+                        <!-- EMPTY STATE -->
                         @if (!readings.Any())
                         {
                             <tr>
                                 <td colspan="6"
                                     class="text-center text-muted py-5">
+
+                                    <i class="bi bi-speedometer2 fs-2 d-block mb-3"></i>
+
                                     No meter readings found.
+
                                 </td>
                             </tr>
                         }
+
                     </tbody>
+
                 </table>
+
             </div>
 
         </div>
+
     </div>
 
 </div>

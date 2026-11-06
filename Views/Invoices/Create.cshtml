@@ -5,26 +5,28 @@
 @{
     ViewData["Title"] = "Create Invoice";
     Layout = "_AdminLayout";
+
+    var contractOptions =
+        ViewBag.ContractOptions as IEnumerable<SelectListItem>
+        ?? Enumerable.Empty<SelectListItem>();
 }
 
 <div class="container-fluid py-4">
 
+    <!-- BACK BUTTON -->
     <div class="mb-4">
-        <a asp-controller="Invoice" asp-action="Index"
+        <a asp-controller="Invoices"
+           asp-action="Index"
            class="text-decoration-none text-muted">
             <i class="bi bi-arrow-left me-1"></i>
             Back to Invoices
         </a>
-        <h4 class="fw-bold mt-3 mb-1">Create Invoice</h4>
-        <p class="text-muted">
-            Generate an invoice for a rental contract.
-        </p>
     </div>
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
 
-            <form asp-controller="Invoice"
+            <form asp-controller="Invoices"
                   asp-action="Create"
                   method="post">
 
@@ -33,8 +35,29 @@
                 <div asp-validation-summary="All"
                      class="text-danger mb-3"></div>
 
-                <div class="row g-4">
+                <div class="row g-3">
 
+                    <!-- SEARCH CONTRACT -->
+                    <div class="col-12">
+                        <label for="contractSearch"
+                               class="form-label fw-semibold">
+                            Search Contract
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text bg-white">
+                                <i class="bi bi-search"></i>
+                            </span>
+
+                            <input type="search"
+                                   id="contractSearch"
+                                   class="form-control"
+                                   placeholder="Search contract ID, room or tenant..."
+                                   autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <!-- CONTRACT DROPDOWN -->
                     <div class="col-12">
                         <label asp-for="ContractId"
                                class="form-label fw-semibold">
@@ -42,15 +65,21 @@
                         </label>
 
                         <select asp-for="ContractId"
-                                asp-items="@(ViewBag.ContractOptions as IEnumerable<SelectListItem>)"
+                                asp-items="contractOptions"
+                                id="ContractId"
                                 class="form-select">
                             <option value="0">-- Select Contract --</option>
                         </select>
+
+                        <div id="contractCount"
+                             class="form-text">
+                        </div>
 
                         <span asp-validation-for="ContractId"
                               class="text-danger small"></span>
                     </div>
 
+                    <!-- INVOICE DATE -->
                     <div class="col-md-6">
                         <label asp-for="InvoiceDate"
                                class="form-label fw-semibold">
@@ -65,6 +94,7 @@
                               class="text-danger small"></span>
                     </div>
 
+                    <!-- DUE DATE -->
                     <div class="col-md-6">
                         <label asp-for="DueDate"
                                class="form-label fw-semibold">
@@ -81,21 +111,23 @@
 
                 </div>
 
-    
-
                 <hr class="my-4" />
 
+                <!-- ACTION BUTTONS -->
                 <div class="d-flex justify-content-end gap-2">
-                    <a asp-controller="Invoice"
+
+                    <a asp-controller="Invoices"
                        asp-action="Index"
                        class="btn btn-outline-secondary">
                         Cancel
                     </a>
 
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit"
+                            class="btn btn-primary">
                         <i class="bi bi-receipt me-2"></i>
                         Create Invoice
                     </button>
+
                 </div>
 
             </form>
@@ -103,3 +135,82 @@
     </div>
 
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const searchInput =
+                document.getElementById("contractSearch");
+
+            const contractSelect =
+                document.getElementById("ContractId");
+
+            const contractCount =
+                document.getElementById("contractCount");
+
+            if (!searchInput || !contractSelect) {
+                return;
+            }
+
+            // Store all contract options from the server.
+            const allOptions = Array.from(contractSelect.options)
+                .filter(option => option.value !== "0" &&
+                                  option.value !== "")
+                .map(option => ({
+                    value: option.value,
+                    text: option.text
+                }));
+
+            function filterContracts() {
+
+                const keyword =
+                    searchInput.value.trim().toLowerCase();
+
+                const selectedValue = contractSelect.value;
+
+                // Search by option text or contract ID.
+                const filtered = allOptions.filter(option =>
+                    option.text.toLowerCase().includes(keyword) ||
+                    option.value.includes(keyword)
+                );
+
+                // Remove existing options.
+                contractSelect.replaceChildren();
+
+                // Add placeholder.
+                contractSelect.add(
+                    new Option("-- Select Contract --", "0")
+                );
+
+                // Add matching contracts.
+                filtered.forEach(option => {
+                    contractSelect.add(
+                        new Option(option.text, option.value)
+                    );
+                });
+
+                // Keep the selected contract if it still matches.
+                if (filtered.some(option =>
+                    option.value === selectedValue)) {
+
+                    contractSelect.value = selectedValue;
+                }
+                else {
+                    contractSelect.value = "0";
+                }
+
+                // Show how many contracts match.
+                contractCount.textContent =
+                    filtered.length + " contract(s) found";
+            }
+
+            searchInput.addEventListener(
+                "input",
+                filterContracts
+            );
+
+            filterContracts();
+        });
+    </script>
+}

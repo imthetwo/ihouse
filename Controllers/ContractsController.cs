@@ -20,7 +20,11 @@ public class ContractsController : Controller
         _context = context;
     }
 
+    // ==========================================
+    // INDEX
     // GET: /Contracts
+    // ==========================================
+
     [HttpGet]
     public async Task<IActionResult> Index()
     {
@@ -35,54 +39,168 @@ public class ContractsController : Controller
         return View(contracts);
     }
 
-    // GET: /Contracts/Create
+    // ==========================================
+    // SEARCH TENANTS
+    // GET: /Contracts/SearchTenants?term=...
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> SearchTenants(string? term)
+    {
+        term = term?.Trim() ?? "";
+
+        if (string.IsNullOrWhiteSpace(term) ||
+            term.Length > 100)
+        {
+            return Json(Array.Empty<object>());
+        }
+
+        bool isNumber = int.TryParse(
+            term,
+            out int tenantId
+        );
+
+        if (term.Length < 2 && !isNumber)
+        {
+            return Json(Array.Empty<object>());
+        }
+
+        string pattern =
+            $"%{EscapeLikePattern(term)}%";
+
+        var tenants = await _context.Tenants
+            .AsNoTracking()
+            .Where(t =>
+                (isNumber && t.Id == tenantId) ||
+                EF.Functions.ILike(
+                    t.FullName,
+                    pattern,
+                    "\\"
+                ) ||
+                (t.Phone != null &&
+                 EF.Functions.ILike(
+                    t.Phone,
+                    pattern,
+                    "\\"
+                 ))
+            )
+            .OrderBy(t => t.FullName)
+            .Take(10)
+            .Select(t => new
+            {
+                id = t.Id,
+                name = t.FullName,
+                phone = t.Phone
+            })
+            .ToListAsync();
+
+        return Json(tenants);
+    }
+
+    private static string EscapeLikePattern(string value)
+    {
+        return value
+            .Replace("\\", "\\\\")
+            .Replace("%", "\\%")
+            .Replace("_", "\\_");
+    }
+
+    // ==========================================
+    // CREATE - GET
+    // ==========================================
+
     [HttpGet]
     public async Task<IActionResult> Create()
     {
         await LoadOptions();
 
-        return View(new ContractFormViewModel());
+        var model = new ContractFormViewModel
+        {
+            Status = ContractStatus.Pending
+        };
+
+        return View(model);
     }
 
-    // POST: /Contracts/Create
+    // ==========================================
+    // CREATE - POST
+    // ==========================================
+
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(ContractFormViewModel model)
+    public async Task<IActionResult> Create(
+        ContractFormViewModel model)
     {
+        bool isAdmin = User.IsInRole("Admin");
+
+        // Staff can only create Pending contracts.
+        if (!isAdmin &&
+            model.Status != ContractStatus.Pending)
+        {
+            ModelState.AddModelError(
+                nameof(model.Status),
+                "Staff can only create Pending contracts."
+            );
+        }
+
+        // New contracts cannot be Terminated.
+        if (model.Status == ContractStatus.Terminated)
+        {
+            ModelState.AddModelError(
+                nameof(model.Status),
+                "New contracts cannot be Terminated."
+            );
+        }
+
         await ValidateContract(model);
 
         if (!ModelState.IsValid)
         {
-            await LoadOptions();
+            await LoadOptions(model.PrimaryTenantId);
             return View(model);
         }
 
         var contract = new Contract
         {
             RoomId = model.RoomId,
-            ContractStartDate = model.ContractStartDate,
-            ContractEndDate = model.ContractEndDate,
+
+            ContractStartDate =
+                model.ContractStartDate,
+
+            ContractEndDate =
+                model.ContractEndDate,
+
             RentPrice = model.RentPrice,
+
             DepositAmount = model.DepositAmount,
+
             PaymentMethod = model.PaymentMethod,
+
             Status = model.Status
         };
 
-        contract.ContractTenants.Add(new ContractTenant
-        {
-            TenantId = model.PrimaryTenantId,
-            IsPrimaryTenant = true
-        });
+        contract.ContractTenants.Add(
+            new ContractTenant
+            {
+                TenantId = model.PrimaryTenantId,
+                IsPrimaryTenant = true
+            }
+        );
 
         _context.Contracts.Add(contract);
+
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Contract created successfully.";
+        TempData["Success"] =
+            "Contract created successfully.";
 
         return RedirectToAction(nameof(Index));
     }
 
-    // GET: /Contracts/Edit/5
+    // ==========================================
+    // EDIT - GET
+    // ==========================================
+
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
@@ -94,28 +212,55 @@ public class ContractsController : Controller
         if (contract == null)
             return NotFound();
 
+        // Terminated contracts cannot be edited.
+        if (contract.Status == ContractStatus.Terminated)
+        {
+            TempData["Error"] =
+                "Terminated contracts cannot be edited.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Staff cannot edit Active contracts.
+        if (!User.IsInRole("Admin") &&
+            contract.Status != ContractStatus.Pending)
+        {
+            return Forbid();
+        }
+
         var model = new ContractFormViewModel
         {
             RoomId = contract.RoomId,
+
             PrimaryTenantId = contract.ContractTenants
                 .Where(ct => ct.IsPrimaryTenant)
                 .Select(ct => ct.TenantId)
                 .FirstOrDefault(),
 
-            ContractStartDate = contract.ContractStartDate,
-            ContractEndDate = contract.ContractEndDate,
+            ContractStartDate =
+                contract.ContractStartDate,
+
+            ContractEndDate =
+                contract.ContractEndDate,
+
             RentPrice = contract.RentPrice,
+
             DepositAmount = contract.DepositAmount,
+
             PaymentMethod = contract.PaymentMethod,
+
             Status = contract.Status
         };
 
-        await LoadOptions();
+        await LoadOptions(model.PrimaryTenantId);
 
         return View(model);
     }
 
-    // POST: /Contracts/Edit/5
+    // ==========================================
+    // EDIT - POST
+    // ==========================================
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
@@ -129,21 +274,65 @@ public class ContractsController : Controller
         if (contract == null)
             return NotFound();
 
+        bool isAdmin = User.IsInRole("Admin");
+
+        // Terminated contracts cannot be edited.
         if (contract.Status == ContractStatus.Terminated)
         {
-            TempData["Error"] = "Terminated contracts cannot be edited.";
+            TempData["Error"] =
+                "Terminated contracts cannot be edited.";
+
             return RedirectToAction(nameof(Index));
+        }
+
+        // Staff may only edit Pending contracts.
+        if (!isAdmin)
+        {
+            if (contract.Status != ContractStatus.Pending)
+            {
+                return Forbid();
+            }
+
+            if (model.Status != ContractStatus.Pending)
+            {
+                ModelState.AddModelError(
+                    nameof(model.Status),
+                    "Only Admin can activate contracts."
+                );
+            }
+        }
+
+        // Termination must use the Terminate action.
+        if (model.Status == ContractStatus.Terminated)
+        {
+            ModelState.AddModelError(
+                nameof(model.Status),
+                "Use the Terminate action to end a contract."
+            );
+        }
+
+        // Do not change an Active contract back to Pending.
+        if (contract.Status == ContractStatus.Active &&
+            model.Status != ContractStatus.Active)
+        {
+            ModelState.AddModelError(
+                nameof(model.Status),
+                "An Active contract cannot return to Pending."
+            );
         }
 
         await ValidateContract(model, id);
 
         if (!ModelState.IsValid)
         {
-            await LoadOptions();
+            await LoadOptions(model.PrimaryTenantId);
             return View(model);
         }
 
-        // Only the primary tenant is edited here.
+        // ======================================
+        // UPDATE PRIMARY TENANT
+        // ======================================
+
         var oldPrimary = contract.ContractTenants
             .FirstOrDefault(ct => ct.IsPrimaryTenant);
 
@@ -151,41 +340,65 @@ public class ContractsController : Controller
             oldPrimary.TenantId != model.PrimaryTenantId)
         {
             _context.ContractTenants.Remove(oldPrimary);
+
+            contract.ContractTenants.Remove(oldPrimary);
         }
 
         var newPrimary = contract.ContractTenants
             .FirstOrDefault(ct =>
-                ct.TenantId == model.PrimaryTenantId);
+                ct.TenantId == model.PrimaryTenantId
+            );
 
         if (newPrimary == null)
         {
-            contract.ContractTenants.Add(new ContractTenant
-            {
-                TenantId = model.PrimaryTenantId,
-                IsPrimaryTenant = true
-            });
+            contract.ContractTenants.Add(
+                new ContractTenant
+                {
+                    TenantId = model.PrimaryTenantId,
+                    IsPrimaryTenant = true
+                }
+            );
         }
         else
         {
             newPrimary.IsPrimaryTenant = true;
         }
 
+        // ======================================
+        // UPDATE CONTRACT
+        // ======================================
+
         contract.RoomId = model.RoomId;
-        contract.ContractStartDate = model.ContractStartDate;
-        contract.ContractEndDate = model.ContractEndDate;
+
+        contract.ContractStartDate =
+            model.ContractStartDate;
+
+        contract.ContractEndDate =
+            model.ContractEndDate;
+
         contract.RentPrice = model.RentPrice;
-        contract.DepositAmount = model.DepositAmount;
-        contract.PaymentMethod = model.PaymentMethod;
+
+        contract.DepositAmount =
+            model.DepositAmount;
+
+        contract.PaymentMethod =
+            model.PaymentMethod;
+
         contract.Status = model.Status;
 
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Contract updated successfully.";
+        TempData["Success"] =
+            "Contract updated successfully.";
 
         return RedirectToAction(nameof(Index));
     }
 
+    // ==========================================
+    // DETAILS
     // GET: /Contracts/Details/5
+    // ==========================================
+
     [HttpGet]
     public async Task<IActionResult> Details(int id)
     {
@@ -202,19 +415,27 @@ public class ContractsController : Controller
         return View(contract);
     }
 
+    // ==========================================
+    // TERMINATE - ADMIN ONLY
     // POST: /Contracts/Terminate/5
+    // ==========================================
+
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Terminate(int id)
     {
-        var contract = await _context.Contracts.FindAsync(id);
+        var contract = await _context.Contracts
+            .FirstOrDefaultAsync(c => c.Id == id);
 
         if (contract == null)
             return NotFound();
 
         if (contract.Status == ContractStatus.Terminated)
         {
-            TempData["Error"] = "Contract is already terminated.";
+            TempData["Error"] =
+                "Contract is already terminated.";
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -222,43 +443,71 @@ public class ContractsController : Controller
 
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Contract terminated successfully.";
+        TempData["Success"] =
+            "Contract terminated successfully.";
 
         return RedirectToAction(nameof(Index));
     }
 
-    // Populate room and tenant dropdowns
-    private async Task LoadOptions()
+    // ==========================================
+    // LOAD ROOM AND TENANT OPTIONS
+    // ==========================================
+
+    private async Task LoadOptions(
+        int? selectedTenantId = null)
     {
         var rooms = await _context.Rooms
             .AsNoTracking()
             .OrderBy(r => r.RoomNumber)
             .ToListAsync();
 
-        var tenants = await _context.Tenants
-            .AsNoTracking()
-            .OrderBy(t => t.FullName)
-            .ToListAsync();
-
         ViewBag.RoomOptions = new SelectList(
-            rooms, "Id", "RoomNumber");
+            rooms,
+            "Id",
+            "RoomNumber"
+        );
 
-        ViewBag.TenantOptions = new SelectList(
-            tenants, "Id", "FullName");
+        ViewBag.SelectedTenantName = "";
+
+        if (selectedTenantId.HasValue &&
+            selectedTenantId.Value > 0)
+        {
+            var tenant = await _context.Tenants
+                .AsNoTracking()
+                .Where(t => t.Id == selectedTenantId.Value)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.FullName
+                })
+                .FirstOrDefaultAsync();
+
+            if (tenant != null)
+            {
+                ViewBag.SelectedTenantName =
+                    $"{tenant.FullName} (ID: {tenant.Id})";
+            }
+        }
     }
 
-    // Basic business validation
+    // ==========================================
+    // CONTRACT VALIDATION
+    // ==========================================
+
     private async Task ValidateContract(
         ContractFormViewModel model,
         int? currentId = null)
     {
+        // Validate dates.
         if (model.ContractEndDate <= model.ContractStartDate)
         {
             ModelState.AddModelError(
                 nameof(model.ContractEndDate),
-                "End date must be after start date.");
+                "End date must be after start date."
+            );
         }
 
+        // Validate room.
         var room = await _context.Rooms
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == model.RoomId);
@@ -267,16 +516,20 @@ public class ContractsController : Controller
         {
             ModelState.AddModelError(
                 nameof(model.RoomId),
-                "Selected room does not exist.");
+                "Selected room does not exist."
+            );
         }
-        else if (model.Status == ContractStatus.Active &&
-                 room.Status == RoomStatus.Maintenance)
+        else if (
+            model.Status == ContractStatus.Active &&
+            room.Status == RoomStatus.Maintenance)
         {
             ModelState.AddModelError(
                 nameof(model.RoomId),
-                "A room under maintenance cannot have an active contract.");
+                "A room under maintenance cannot have an active contract."
+            );
         }
 
+        // Validate tenant.
         bool tenantExists = await _context.Tenants
             .AnyAsync(t => t.Id == model.PrimaryTenantId);
 
@@ -284,31 +537,29 @@ public class ContractsController : Controller
         {
             ModelState.AddModelError(
                 nameof(model.PrimaryTenantId),
-                "Selected tenant does not exist.");
+                "Please select a valid tenant."
+            );
         }
 
-        if (model.Status == ContractStatus.Terminated &&
-            currentId == null)
-        {
-            ModelState.AddModelError(
-                nameof(model.Status),
-                "New contracts cannot start as Terminated.");
-        }
-
+        // Validate overlapping active contracts.
         if (model.Status == ContractStatus.Active)
         {
-            bool overlaps = await _context.Contracts.AnyAsync(c =>
-                c.RoomId == model.RoomId &&
-                c.Status == ContractStatus.Active &&
-                (!currentId.HasValue || c.Id != currentId.Value) &&
-                c.ContractStartDate <= model.ContractEndDate &&
-                c.ContractEndDate >= model.ContractStartDate);
+            bool overlaps = await _context.Contracts
+                .AnyAsync(c =>
+                    c.RoomId == model.RoomId &&
+                    c.Status == ContractStatus.Active &&
+                    (!currentId.HasValue ||
+                     c.Id != currentId.Value) &&
+                    c.ContractStartDate <= model.ContractEndDate &&
+                    c.ContractEndDate >= model.ContractStartDate
+                );
 
             if (overlaps)
             {
                 ModelState.AddModelError(
                     nameof(model.RoomId),
-                    "This room already has an active contract for these dates.");
+                    "This room already has an active contract for these dates."
+                );
             }
         }
     }
