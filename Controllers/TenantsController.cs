@@ -1,9 +1,12 @@
 
+using System.Security.Cryptography;
+using System.Text;
 using ihouse.Data;
 using ihouse.Models;
 using ihouse.ViewModels.Tenant;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ihouse.Controllers;
@@ -18,7 +21,10 @@ public class TenantsController : Controller
         _context = context;
     }
 
-    // GET: /Tenants
+    // ==========================================
+    // TENANT LIST
+    // ==========================================
+
     [HttpGet]
     public async Task<IActionResult> Index()
     {
@@ -30,17 +36,20 @@ public class TenantsController : Controller
         return View(tenants);
     }
 
-    // GET: /Tenants/Create
+    // ==========================================
+    // CREATE TENANT
+    // ==========================================
+
     [HttpGet]
     public IActionResult Create()
     {
         return View(new TenantFormViewModel());
     }
 
-    // POST: /Tenants/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(TenantFormViewModel model)
+    public async Task<IActionResult> Create(
+        TenantFormViewModel model)
     {
         ValidateInput(model);
 
@@ -72,12 +81,16 @@ public class TenantsController : Controller
         _context.Tenants.Add(tenant);
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Tenant created successfully.";
+        TempData["Success"] =
+            "Tenant created successfully.";
 
         return RedirectToAction(nameof(Index));
     }
 
-    // GET: /Tenants/Edit/5
+    // ==========================================
+    // EDIT TENANT
+    // ==========================================
+
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
@@ -97,7 +110,6 @@ public class TenantsController : Controller
         return View(model);
     }
 
-    // POST: /Tenants/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
@@ -136,12 +148,16 @@ public class TenantsController : Controller
 
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Tenant updated successfully.";
+        TempData["Success"] =
+            "Tenant updated successfully.";
 
         return RedirectToAction(nameof(Index));
     }
 
-    // GET: /Tenants/Details/5
+    // ==========================================
+    // TENANT DETAILS
+    // ==========================================
+
     [HttpGet]
     public async Task<IActionResult> Details(int id)
     {
@@ -158,7 +174,117 @@ public class TenantsController : Controller
         return View(tenant);
     }
 
-    // POST: /Tenants/Delete/5
+    // ==========================================
+    // GENERATE CONTRACT INVITATION
+    // ==========================================
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GenerateInvitation(
+        int tenantId,
+        int contractId)
+    {
+        var tenant = await _context.Tenants
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == tenantId);
+
+        if (tenant == null)
+            return NotFound();
+
+        // A linked tenant cannot be linked again.
+        if (!string.IsNullOrEmpty(tenant.ApplicationUserId))
+        {
+            TempData["Error"] =
+                "This tenant profile is already linked to an account.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = tenantId });
+        }
+
+        // Require a known email so the eventual
+        // account can be matched to this tenant.
+        if (string.IsNullOrWhiteSpace(tenant.Email))
+        {
+            TempData["Error"] =
+                "Please add the tenant's email before creating an invitation.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = tenantId });
+        }
+
+        // Verify the contract belongs to this tenant.
+        var validContract = await _context.ContractTenants
+            .AsNoTracking()
+            .AnyAsync(ct =>
+                ct.TenantId == tenantId &&
+                ct.ContractId == contractId &&
+                ct.Contract.Status.ToString() == "Active");
+
+        if (!validContract)
+        {
+            TempData["Error"] =
+                "The selected contract is not an active contract for this tenant.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = tenantId });
+        }
+
+        var now = DateTime.UtcNow;
+
+        // Expire old unused invitations for this tenant.
+        var oldInvitations = await _context.TenantInvitations
+            .Where(i =>
+                i.TenantId == tenantId &&
+                i.RedeemedAt == null &&
+                i.ExpiresAt > now)
+            .ToListAsync();
+
+        foreach (var old in oldInvitations)
+        {
+            old.ExpiresAt = now;
+        }
+
+        // Create a cryptographically secure token.
+        var code = WebEncoders.Base64UrlEncode(
+            RandomNumberGenerator.GetBytes(32));
+
+        // Store only its SHA-256 hash.
+        var codeHash = Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(code)));
+
+        var invitation = new TenantInvitation
+        {
+            TenantId = tenantId,
+            ContractId = contractId,
+            CodeHash = codeHash,
+            CreatedAt = now,
+            ExpiresAt = now.AddHours(24),
+            RedeemedAt = null,
+            RedeemedByUserId = null
+        };
+
+        _context.TenantInvitations.Add(invitation);
+
+        await _context.SaveChangesAsync();
+
+        // Show the original code once after creation.
+        TempData["InvitationCode"] = code;
+        TempData["InvitationTenantId"] = tenantId;
+        TempData["Success"] =
+            "Invitation created successfully. Copy the code and share it securely with the tenant.";
+
+        return RedirectToAction(
+            nameof(Details),
+            new { id = tenantId });
+    }
+
+    // ==========================================
+    // DELETE TENANT
+    // ==========================================
+
     [Authorize(Roles = "Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -175,7 +301,10 @@ public class TenantsController : Controller
         bool hasMaintenance = await _context.MaintenanceRequests
             .AnyAsync(m => m.TenantId == id);
 
-        if (hasContracts || hasMaintenance)
+        bool hasInvitations = await _context.TenantInvitations
+            .AnyAsync(i => i.TenantId == id);
+
+        if (hasContracts || hasMaintenance || hasInvitations)
         {
             TempData["Error"] =
                 "Cannot delete a tenant with related records.";
@@ -189,7 +318,8 @@ public class TenantsController : Controller
         {
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = "Tenant deleted successfully.";
+            TempData["Success"] =
+                "Tenant deleted successfully.";
         }
         catch (DbUpdateException)
         {
@@ -199,6 +329,10 @@ public class TenantsController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
+    // ==========================================
+    // VALIDATION HELPERS
+    // ==========================================
 
     private void ValidateInput(TenantFormViewModel model)
     {

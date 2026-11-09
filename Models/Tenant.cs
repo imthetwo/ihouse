@@ -1,7 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace ihouse.Models
 {
+    [Index(nameof(ApplicationUserId), IsUnique = true)]
     public class Tenant
     {
         public int Id { get; set; }
@@ -18,6 +21,11 @@ namespace ihouse.Models
 
         [EmailAddress]
         public string? Email { get; set; }
+
+        // Link to ASP.NET Core Identity account
+        public string? ApplicationUserId { get; set; }
+
+        public ApplicationUser? ApplicationUser { get; set; }
 
         // ContractTenant relationship
         public ICollection<ContractTenant> ContractTenants { get; set; }

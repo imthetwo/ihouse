@@ -28,5 +28,10 @@ namespace ihouse.Models
         // MaintenanceCost relationship
         public ICollection<MaintenanceCost> MaintenanceCosts { get; set; }
             = new List<MaintenanceCost>();
+
+        public MaintenanceApprovalStatus ApprovalStatus { get; set; }
+            = MaintenanceApprovalStatus.NotRequired;
+
+        public DateTime? ApprovalDecidedAt { get; set; }
     }
 }

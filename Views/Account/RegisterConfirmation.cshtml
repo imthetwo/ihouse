@@ -1,55 +1,303 @@
 
 @{
-    ViewData["Title"] = "Check Your Email";
-    Layout = "_AuthLayout";
+    ViewData["Title"] = "Check Your Email - iHouse";
+    Layout = "_Layout";
+
+    var notice = TempData["EmailNotice"] as string;
 }
 
-<div class="forgot-page">
-    <div class="forgot-card">
+<style>
+    .verify-page {
+        min-height: calc(100vh - 100px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 50px 20px;
+        background:
+            radial-gradient(
+                circle at 50% 0%,
+                #e0ecff 0%,
+                transparent 50%
+            ),
+            #f5f8fd;
+    }
 
-        <div class="forgot-heading text-center">
-            <h1>Check Your Email</h1>
-            <p>
-                Your account has been created.
-                Please check your inbox for a verification link.
-            </p>
+    .verify-card {
+        width: 100%;
+        max-width: 480px;
+        padding: 36px;
+        background: #ffffff;
+        border: 1px solid #e7edf5;
+        border-radius: 22px;
+        box-shadow:
+            0 18px 55px rgba(25, 55, 100, 0.07);
+    }
+
+    .verify-brand {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 24px;
+        font-weight: 750;
+        color: #0866d9;
+        margin-bottom: 28px;
+    }
+
+    .verify-brand i {
+        font-size: 27px;
+    }
+
+    .verify-icon {
+        width: 86px;
+        height: 86px;
+        margin: 0 auto 24px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #eaf2ff;
+        border-radius: 50%;
+        color: #0866d9;
+    }
+
+    .verify-icon i {
+        font-size: 40px;
+    }
+
+    .verify-title {
+        font-size: 27px;
+        font-weight: 750;
+        color: #183153;
+        letter-spacing: -0.6px;
+        text-align: center;
+        margin-bottom: 12px;
+    }
+
+    .verify-description {
+        font-size: 14px;
+        line-height: 1.8;
+        text-align: center;
+        color: #64748b;
+        margin-bottom: 24px;
+    }
+
+    .verify-notice {
+        display: flex;
+        gap: 10px;
+        padding: 14px;
+        margin-bottom: 22px;
+        border-radius: 12px;
+        background: #eef6ff;
+        color: #24568c;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .verify-notice i {
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    .verify-steps {
+        padding: 22px;
+        background: #f5f8ff;
+        border-radius: 14px;
+        margin-bottom: 22px;
+    }
+
+    .verify-steps-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #183153;
+        margin-bottom: 18px;
+    }
+
+    .verify-step {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        color: #475569;
+        font-size: 13px;
+    }
+
+    .verify-step:last-child {
+        margin-bottom: 0;
+    }
+
+    .verify-step-number {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 27px;
+        height: 27px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: #dbeafe;
+        color: #0866d9;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .verify-security {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 24px;
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.7;
+    }
+
+    .verify-security i {
+        font-size: 17px;
+        flex-shrink: 0;
+        color: #64748b;
+    }
+
+    .verify-login-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        min-height: 48px;
+        border-radius: 11px;
+        background: #0866d9;
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: 0.2s ease;
+    }
+
+    .verify-login-btn:hover {
+        background: #0755b5;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(8, 102, 217, 0.16);
+    }
+
+    .verify-footer {
+        margin-top: 22px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 12px;
+        line-height: 1.7;
+    }
+
+    @@media (max-width: 576px) {
+        .verify-page {
+            min-height: calc(100vh - 70px);
+            padding: 24px 14px;
+        }
+
+        .verify-card {
+            padding: 26px 22px;
+            border-radius: 18px;
+        }
+
+        .verify-title {
+            font-size: 23px;
+        }
+
+        .verify-icon {
+            width: 76px;
+            height: 76px;
+        }
+
+        .verify-steps {
+            padding: 18px;
+        }
+    }
+</style>
+
+<section class="verify-page">
+    <div class="verify-card">
+
+        <!-- BRAND -->
+        <div class="verify-brand">
+            <i class="bi bi-house-door-fill"></i>
+            <span>iHouse</span>
         </div>
 
-        @if (TempData["EmailNotice"] != null)
+        <!-- EMAIL ICON -->
+        <div class="verify-icon">
+            <i class="bi bi-envelope-check"></i>
+        </div>
+
+        <!-- HEADING -->
+        <h1 class="verify-title">
+            Check your email
+        </h1>
+
+        <p class="verify-description">
+            Your account has been created.
+
+            Please open your inbox and click the
+            verification link to activate your
+            iHouse account.
+        </p>
+
+        <!-- SERVER NOTICE -->
+        @if (!string.IsNullOrWhiteSpace(notice))
         {
-            <div class="alert alert-info" role="status">
-                @TempData["EmailNotice"]
+            <div class="verify-notice" role="status">
+                <i class="bi bi-info-circle"></i>
+                <span>@notice</span>
             </div>
         }
 
-        <form asp-controller="Account"
-              asp-action="ResendConfirmationEmail"
-              method="post">
+        <!-- NEXT STEPS -->
+        <div class="verify-steps">
 
-            <label for="email" class="form-label">
-                Didn't receive an email?
-            </label>
+            <div class="verify-steps-title">
+                <i class="bi bi-list-check me-2"></i>
+                What's next?
+            </div>
 
-            <input type="email"
-                   id="email"
-                   name="email"
-                   class="form-control auth-input"
-                   placeholder="Enter your registered email"
-                   autocomplete="email"
-                   required />
+            <div class="verify-step">
+                <span class="verify-step-number">1</span>
+                <span>Open your email inbox</span>
+            </div>
 
-            <button type="submit"
-                    class="btn btn-primary auth-submit w-100 mt-3">
-                Resend Verification Email
-            </button>
+            <div class="verify-step">
+                <span class="verify-step-number">2</span>
+                <span>Click the verification link</span>
+            </div>
 
-        </form>
+            <div class="verify-step">
+                <span class="verify-step-number">3</span>
+                <span>Sign in to your account</span>
+            </div>
 
+        </div>
+
+        <!-- SECURITY -->
+        <div class="verify-security">
+            <i class="bi bi-shield-check"></i>
+
+            <span>
+                For your security, your account
+                remains inactive until your email
+                address is verified.
+            </span>
+        </div>
+
+        <!-- LOGIN -->
         <a asp-controller="Account"
            asp-action="Login"
-           class="auth-back-link d-block text-center mt-3">
+           class="verify-login-btn">
+
+            <i class="bi bi-arrow-left"></i>
             Back to Sign In
         </a>
 
+        <!-- FOOTER -->
+        <p class="verify-footer mb-0">
+            Didn't receive an email?
+            Check your spam or junk folder.
+        </p>
+
     </div>
-</div>
+</section>

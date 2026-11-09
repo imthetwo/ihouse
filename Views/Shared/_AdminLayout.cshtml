@@ -12,6 +12,36 @@
 
     var accountRole = isAdmin ? "Admin"
         : isStaff ? "Staff" : "User";
+
+    var dashboardClass = currentController == dashboardController
+        ? "admin-nav-link active" : "admin-nav-link";
+
+    var roomsClass = currentController == "Rooms"
+        ? "admin-nav-link active" : "admin-nav-link";
+
+    var tenantsClass = currentController == "Tenants"
+        ? "admin-nav-link active" : "admin-nav-link";
+
+    var contractsClass = currentController == "Contracts"
+        ? "admin-nav-link active" : "admin-nav-link";
+
+    var invoicesClass = currentController == "Invoices"
+        ? "admin-nav-link active" : "admin-nav-link";
+
+    var paymentClass = currentController == "Payment"
+        ? "admin-nav-link active" : "admin-nav-link";
+
+    var meterClass = currentController == "MeterReading"
+        ? "admin-nav-link active" : "admin-nav-link";
+
+    var servicePriceClass = currentController == "ServicePrice"
+        ? "admin-nav-link active" : "admin-nav-link";
+
+    var maintenanceClass = currentController == "Maintenance"
+        ? "admin-nav-link active" : "admin-nav-link";
+
+    var userManagementClass = currentController == "UserManagement"
+        ? "admin-nav-link active" : "admin-nav-link";
 }
 
 <!DOCTYPE html>
@@ -52,70 +82,115 @@
         <!-- SIDEBAR -->
         <aside class="admin-sidebar">
 
+            <!-- BRAND -->
             <a href="@Url.Action("Index", dashboardController)"
                class="admin-brand">
+
                 <span class="admin-brand-icon">⌂</span>
                 <span>iHouse</span>
+
             </a>
 
+            <!-- NAVIGATION -->
             <nav class="admin-nav">
 
+                <!-- DASHBOARD -->
                 <a href="@Url.Action("Index", dashboardController)"
-                   class="admin-nav-link @(currentController == dashboardController ? "active" : "")">
+                   class="@dashboardClass">
+
                     <i class="bi bi-grid-1x2"></i>
                     <span>Dashboard</span>
+
                 </a>
 
+                <!-- ROOMS -->
                 <a href="@Url.Action("Index", "Rooms")"
-                   class="admin-nav-link @(currentController == "Rooms" ? "active" : "")">
+                   class="@roomsClass">
+
                     <i class="bi bi-door-open"></i>
                     <span>Rooms</span>
+
                 </a>
 
+                <!-- TENANTS -->
                 <a href="@Url.Action("Index", "Tenants")"
-                   class="admin-nav-link @(currentController == "Tenants" ? "active" : "")">
+                   class="@tenantsClass">
+
                     <i class="bi bi-people"></i>
                     <span>Tenants</span>
+
                 </a>
 
+                <!-- CONTRACTS -->
                 <a href="@Url.Action("Index", "Contracts")"
-                   class="admin-nav-link @(currentController == "Contracts" ? "active" : "")">
+                   class="@contractsClass">
+
                     <i class="bi bi-file-earmark-text"></i>
                     <span>Contracts</span>
+
                 </a>
 
+                <!-- INVOICES -->
                 <a href="@Url.Action("Index", "Invoices")"
-                   class="admin-nav-link @(currentController == "Invoices" ? "active" : "")">
+                   class="@invoicesClass">
+
                     <i class="bi bi-receipt"></i>
                     <span>Invoices</span>
+
                 </a>
 
+                <!-- PAYMENTS -->
                 <a href="@Url.Action("Index", "Payment")"
-                   class="admin-nav-link @(currentController == "Payment" ? "active" : "")">
+                   class="@paymentClass">
+
                     <i class="bi bi-credit-card"></i>
                     <span>Payments</span>
+
                 </a>
 
+                <!-- METER READINGS -->
                 <a href="@Url.Action("Index", "MeterReading")"
-                   class="admin-nav-link @(currentController == "MeterReading" ? "active" : "")">
+                   class="@meterClass">
+
                     <i class="bi bi-speedometer2"></i>
                     <span>Meter Readings</span>
+
                 </a>
 
+                <!-- SERVICE PRICES -->
                 <a href="@Url.Action("Index", "ServicePrice")"
-                   class="admin-nav-link @(currentController == "ServicePrice" ? "active" : "")">
+                   class="@servicePriceClass">
+
                     <i class="bi bi-tags"></i>
                     <span>Service Prices</span>
+
                 </a>
 
+                <!-- MAINTENANCE -->
                 <a href="@Url.Action("Index", "Maintenance")"
-                   class="admin-nav-link @(currentController == "Maintenance" ? "active" : "")">
+                   class="@maintenanceClass">
+
                     <i class="bi bi-tools"></i>
                     <span>Maintenance</span>
+
                 </a>
+
+                <!-- USER MANAGEMENT - ADMIN ONLY -->
+                @if (isAdmin)
+                {
+                    <a asp-controller="UserManagement"
+                       asp-action="Index"
+                       class="@userManagementClass">
+
+                        <i class="bi bi-person-gear"></i>
+                        <span>User Management</span>
+
+                    </a>
+                }
 
             </nav>
 
+            <!-- SIDEBAR FOOTER -->
             <div class="admin-sidebar-footer">
                 Property Management System
             </div>
@@ -125,7 +200,7 @@
         <!-- MAIN AREA -->
         <div class="admin-main">
 
-            <!-- HEADER -->
+            <!-- TOPBAR -->
             <header class="admin-topbar d-flex justify-content-end align-items-center">
 
                 <div class="dropdown ms-auto">
@@ -141,6 +216,7 @@
                         </div>
 
                         <div class="text-start">
+
                             <div class="admin-user-name">
                                 @accountName
                             </div>
@@ -148,17 +224,21 @@
                             <div class="admin-user-role">
                                 @accountRole
                             </div>
+
                         </div>
 
                     </button>
 
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
 
+                        <!-- PROFILE -->
                         <li>
                             <a href="@Url.Action("Index", "Profile")"
                                class="dropdown-item">
+
                                 <i class="bi bi-person-circle me-2"></i>
                                 My Profile
+
                             </a>
                         </li>
 
@@ -166,6 +246,7 @@
                             <hr class="dropdown-divider" />
                         </li>
 
+                        <!-- LOGOUT -->
                         <li>
                             <form action="@Url.Action("Logout", "Account")"
                                   method="post">
@@ -174,14 +255,17 @@
 
                                 <button type="submit"
                                         class="dropdown-item text-danger">
+
                                     <i class="bi bi-box-arrow-right me-2"></i>
                                     Logout
+
                                 </button>
 
                             </form>
                         </li>
 
                     </ul>
+
                 </div>
 
             </header>

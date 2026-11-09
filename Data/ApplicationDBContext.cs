@@ -43,6 +43,8 @@ namespace ihouse.Data
 
         public DbSet<MaintenanceCost> MaintenanceCosts { get; set; }
 
+        public DbSet<TenantInvitation> TenantInvitations { get; set; }
+
 
         // =========================
         // Model Configuration
@@ -221,6 +223,33 @@ namespace ihouse.Data
                 .WithMany(mr => mr.MaintenanceCosts)
                 .HasForeignKey(mc => mc.MaintenanceRequestId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
+
+            // =========================
+            // ApplicationUser - Tenant
+            // One-to-One Relationship
+            // =========================
+
+            modelBuilder.Entity<Tenant>()
+                .HasOne(t => t.ApplicationUser)
+                .WithOne()
+                .HasForeignKey<Tenant>(t => t.ApplicationUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Tenant>()
+                .HasIndex(t => t.ApplicationUserId)
+                .IsUnique();
+
+
+            // =========================
+            // TenantInvitation
+            // =========================
+
+            modelBuilder.Entity<TenantInvitation>()
+                .HasIndex(x => x.CodeHash)
+                .IsUnique();
+
 
 
             // =========================

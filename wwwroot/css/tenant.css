@@ -1,0 +1,242 @@
+
+/* ==========================================
+   TENANT - BASE
+========================================== */
+
+.tenant-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    background: #f2f6fc;
+    color: #183153;
+    font-family: Arial, sans-serif;
+}
+
+/* ==========================================
+   TENANT - NAVBAR
+========================================== */
+
+.tenant-navbar {
+    width: 100%;
+    padding: 18px 32px;
+    background: #ffffff;
+    border-bottom: 1px solid #dce5f0;
+}
+
+.tenant-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #0866d9;
+    font-size: 24px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.tenant-brand:hover {
+    color: #0866d9;
+}
+
+.tenant-brand i {
+    font-size: 26px;
+}
+
+/* Navigation links */
+
+.tenant-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px !important;
+    border-radius: 8px;
+    color: #52647d;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.tenant-nav-link:hover,
+.tenant-nav-link:focus {
+    color: #0866d9;
+    background: #e7f0ff;
+}
+
+.tenant-nav-link.active {
+    color: #0866d9 !important;
+    background: #e7f0ff;
+    font-weight: 600;
+}
+
+/* Account */
+
+.tenant-account {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #52647d;
+    font-size: 14px;
+}
+
+/* ==========================================
+   TENANT - CONTENT
+========================================== */
+
+.tenant-content {
+    flex: 1;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 32px;
+}
+
+/* Dashboard cards */
+
+.tenant-card {
+    height: 100%;
+    padding: 24px;
+    background: #ffffff;
+    border: 1px solid #e5eaf1;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(24, 49, 83, 0.04);
+}
+
+.tenant-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 15px;
+    border-radius: 12px;
+    background: #e7f0ff;
+    color: #0866d9;
+    font-size: 22px;
+}
+
+/* Page headings */
+
+.tenant-page-title {
+    margin: 0 0 24px;
+    color: #183153;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* ==========================================
+   TENANT - FOOTER
+========================================== */
+
+.tenant-footer {
+    width: 100%;
+    padding: 16px 24px 24px;
+    background: transparent;
+    border: none;
+    color: #718096;
+    text-align: center;
+    font-size: 12px;
+}
+
+/* ==========================================
+   RESPONSIVE
+========================================== */
+
+@media (max-width: 991px) {
+
+    .tenant-navbar {
+        padding: 16px;
+    }
+
+    .tenant-navbar .navbar-nav {
+        align-items: stretch;
+        margin-top: 16px;
+    }
+
+    .tenant-nav-link {
+        display: flex;
+    }
+
+    .tenant-navbar .nav-item form {
+        padding: 8px 14px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .tenant-content {
+        padding: 20px 16px;
+    }
+
+    .tenant-page-title {
+        font-size: 22px;
+    }
+
+    .tenant-card {
+        padding: 20px;
+    }
+}
+
+
+
+/* ==========================================
+   TENANT - INTERACTIVE DASHBOARD CARDS
+========================================== */
+
+.tenant-card-action {
+    display: block;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    border: 1px solid #e5eaf1;
+    transition: border-color 0.2s ease,
+                box-shadow 0.2s ease,
+                transform 0.2s ease;
+}
+
+.tenant-card-action:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 6px 20px rgba(8, 102, 217, 0.10);
+    transform: translateY(-2px);
+}
+
+.tenant-card-action:focus-visible {
+    outline: 3px solid #93c5fd;
+    outline-offset: 3px;
+}
+
+/* ==========================================
+   TENANT - ROOM MODAL IMAGE
+========================================== */
+
+.tenant-room-preview {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #f1f5f9;
+}
+
+.tenant-room-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    color: #94a3b8;
+}
+
+.tenant-room-photo {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 576px) {
+    .tenant-room-preview {
+        height: 180px;
+    }
+}
