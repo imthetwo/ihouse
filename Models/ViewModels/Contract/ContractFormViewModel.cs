@@ -1,4 +1,3 @@
-
 using System.ComponentModel.DataAnnotations;
 using ihouse.Models.Enums;
 
@@ -6,11 +5,15 @@ namespace ihouse.ViewModels.Contract;
 
 public class ContractFormViewModel : IValidatableObject
 {
-    [Range(1, int.MaxValue,
+    [Range(
+        1,
+        int.MaxValue,
         ErrorMessage = "Please select a room.")]
     public int RoomId { get; set; }
 
-    [Range(1, int.MaxValue,
+    [Range(
+        1,
+        int.MaxValue,
         ErrorMessage = "Please select a tenant.")]
     public int PrimaryTenantId { get; set; }
 
@@ -28,23 +31,38 @@ public class ContractFormViewModel : IValidatableObject
     [DataType(DataType.Date)]
     public DateOnly? CheckOutDate { get; set; }
 
-    [Range(typeof(decimal), "1", "2000",
+    [Range(
+        typeof(decimal),
+        "1",
+        "2000",
         ErrorMessage = "Monthly rent must be between $1 and $2,000.")]
     public decimal RentPrice { get; set; }
 
-    [Range(typeof(decimal), "0", "4000",
+    [Range(
+        typeof(decimal),
+        "0",
+        "4000",
         ErrorMessage = "Deposit must be between $0 and $4,000.")]
     public decimal DepositAmount { get; set; }
 
-    [EnumDataType(typeof(PaymentMethod))]
+    [Required]
+    [EnumDataType(
+        typeof(PaymentMethod),
+        ErrorMessage = "Invalid payment method.")]
     public PaymentMethod PaymentMethod { get; set; }
+        = PaymentMethod.Cash;
 
-    [EnumDataType(typeof(ContractStatus))]
-    public ContractStatus Status { get; set; } = ContractStatus.Pending;
+    [Required]
+    [EnumDataType(
+        typeof(ContractStatus),
+        ErrorMessage = "Invalid contract status.")]
+    public ContractStatus Status { get; set; }
+        = ContractStatus.Pending;
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
     {
+        // Validate contract dates.
         if (ContractEndDate <= ContractStartDate)
         {
             yield return new ValidationResult(
@@ -52,6 +70,7 @@ public class ContractFormViewModel : IValidatableObject
                 new[] { nameof(ContractEndDate) });
         }
 
+        // Validate check-in and check-out dates.
         if (CheckInDate.HasValue &&
             CheckOutDate.HasValue &&
             CheckOutDate.Value < CheckInDate.Value)
@@ -59,6 +78,15 @@ public class ContractFormViewModel : IValidatableObject
             yield return new ValidationResult(
                 "Check-out date cannot be earlier than check-in date.",
                 new[] { nameof(CheckOutDate) });
+        }
+
+        // Only Cash and PayPal are supported.
+        if (PaymentMethod != PaymentMethod.Cash &&
+            PaymentMethod != PaymentMethod.PayPal)
+        {
+            yield return new ValidationResult(
+                "Please select Cash or PayPal.",
+                new[] { nameof(PaymentMethod) });
         }
     }
 }

@@ -1,8 +1,13 @@
 
+using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using ihouse.Data;
 using ihouse.Models;
+using ihouse.Models.Enums;
+using ihouse.Services;
 using ihouse.ViewModels.Tenant;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,10 +20,17 @@ namespace ihouse.Controllers;
 public class TenantsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly EmailService _emailService;
+    private readonly ILogger<TenantsController> _logger;
 
-    public TenantsController(ApplicationDbContext context)
+    public TenantsController(
+        ApplicationDbContext context,
+        EmailService emailService,
+        ILogger<TenantsController> logger)
     {
         _context = context;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     // ==========================================
@@ -37,7 +49,7 @@ public class TenantsController : Controller
     }
 
     // ==========================================
-    // CREATE TENANT
+    // CREATE TENANT - GET
     // ==========================================
 
     [HttpGet]
@@ -45,6 +57,10 @@ public class TenantsController : Controller
     {
         return View(new TenantFormViewModel());
     }
+
+    // ==========================================
+    // CREATE TENANT - POST
+    // ==========================================
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -79,6 +95,7 @@ public class TenantsController : Controller
         };
 
         _context.Tenants.Add(tenant);
+
         await _context.SaveChangesAsync();
 
         TempData["Success"] =
@@ -88,13 +105,15 @@ public class TenantsController : Controller
     }
 
     // ==========================================
-    // EDIT TENANT
+    // EDIT TENANT - GET
     // ==========================================
 
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
-        var tenant = await _context.Tenants.FindAsync(id);
+        var tenant = await _context.Tenants
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == id);
 
         if (tenant == null)
             return NotFound();
@@ -109,6 +128,10 @@ public class TenantsController : Controller
 
         return View(model);
     }
+
+    // ==========================================
+    // EDIT TENANT - POST
+    // ==========================================
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -128,9 +151,10 @@ public class TenantsController : Controller
 
         string identity = model.IdentityNumber.Trim();
 
-        bool exists = await _context.Tenants.AnyAsync(t =>
-            t.Id != id &&
-            t.IdentityNumber == identity);
+        bool exists = await _context.Tenants
+            .AnyAsync(t =>
+                t.Id != id &&
+                t.IdentityNumber == identity);
 
         if (exists)
         {
@@ -176,6 +200,7 @@ public class TenantsController : Controller
 
     // ==========================================
     // GENERATE CONTRACT INVITATION
+    // AND SEND EMAIL AUTOMATICALLY
     // ==========================================
 
     [HttpPost]
@@ -184,6 +209,10 @@ public class TenantsController : Controller
         int tenantId,
         int contractId)
     {
+        // ======================================
+        // 1. FIND TENANT
+        // ======================================
+
         var tenant = await _context.Tenants
             .AsNoTracking()
             .FirstOrDefaultAsync(t => t.Id == tenantId);
@@ -191,8 +220,12 @@ public class TenantsController : Controller
         if (tenant == null)
             return NotFound();
 
-        // A linked tenant cannot be linked again.
-        if (!string.IsNullOrEmpty(tenant.ApplicationUserId))
+        // ======================================
+        // 2. CHECK ACCOUNT LINKING
+        // ======================================
+
+        if (!string.IsNullOrWhiteSpace(
+            tenant.ApplicationUserId))
         {
             TempData["Error"] =
                 "This tenant profile is already linked to an account.";
@@ -202,58 +235,61 @@ public class TenantsController : Controller
                 new { id = tenantId });
         }
 
-        // Require a known email so the eventual
-        // account can be matched to this tenant.
+        // ======================================
+        // 3. CHECK EMAIL
+        // ======================================
+
         if (string.IsNullOrWhiteSpace(tenant.Email))
         {
             TempData["Error"] =
-                "Please add the tenant's email before creating an invitation.";
+                "Please add the tenant's email before generating an invitation.";
 
             return RedirectToAction(
                 nameof(Details),
                 new { id = tenantId });
         }
 
-        // Verify the contract belongs to this tenant.
-        var validContract = await _context.ContractTenants
+        // ======================================
+        // 4. VALIDATE ACTIVE CONTRACT
+        // ======================================
+
+        bool validContract = await _context.ContractTenants
             .AsNoTracking()
             .AnyAsync(ct =>
                 ct.TenantId == tenantId &&
                 ct.ContractId == contractId &&
-                ct.Contract.Status.ToString() == "Active");
+                ct.Contract.Status == ContractStatus.Active);
 
         if (!validContract)
         {
             TempData["Error"] =
-                "The selected contract is not an active contract for this tenant.";
+                "The selected contract is not active or does not belong to this tenant.";
 
             return RedirectToAction(
                 nameof(Details),
                 new { id = tenantId });
         }
 
+        // ======================================
+        // 5. GENERATE SECURE CODE
+        // ======================================
+
         var now = DateTime.UtcNow;
 
-        // Expire old unused invitations for this tenant.
-        var oldInvitations = await _context.TenantInvitations
-            .Where(i =>
-                i.TenantId == tenantId &&
-                i.RedeemedAt == null &&
-                i.ExpiresAt > now)
-            .ToListAsync();
-
-        foreach (var old in oldInvitations)
-        {
-            old.ExpiresAt = now;
-        }
-
-        // Create a cryptographically secure token.
-        var code = WebEncoders.Base64UrlEncode(
+        string code = WebEncoders.Base64UrlEncode(
             RandomNumberGenerator.GetBytes(32));
 
-        // Store only its SHA-256 hash.
-        var codeHash = Convert.ToHexString(
-            SHA256.HashData(Encoding.UTF8.GetBytes(code)));
+        // ======================================
+        // 6. HASH CODE
+        // ======================================
+
+        string codeHash = Convert.ToHexString(
+            SHA256.HashData(
+                Encoding.UTF8.GetBytes(code)));
+
+        // ======================================
+        // 7. CREATE INVITATION ENTITY
+        // ======================================
 
         var invitation = new TenantInvitation
         {
@@ -266,15 +302,169 @@ public class TenantsController : Controller
             RedeemedByUserId = null
         };
 
-        _context.TenantInvitations.Add(invitation);
+        // ======================================
+        // 8. SAVE INVITATION TO DATABASE
+        // ======================================
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.TenantInvitations.Add(invitation);
 
-        // Show the original code once after creation.
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to save invitation for Tenant {TenantId}",
+                tenantId);
+
+            TempData["Error"] =
+                "Unable to create invitation. Please try again.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = tenantId });
+        }
+
+        // ======================================
+        // 9. PREPARE EMAIL CONTENT
+        // ======================================
+
+        string subject =
+            "iHouse - Contract Invitation Code";
+
+        string body = $"""
+            Hello {tenant.FullName},
+
+            Welcome to iHouse!
+
+            Your rental contract is ready.
+
+            Contract ID: {contractId}
+
+            YOUR INVITATION CODE:
+
+            {code}
+
+            ----------------------------------------
+
+            HOW TO CONNECT YOUR CONTRACT
+
+            1. Open the iHouse website.
+            2. Register or log in to your account.
+            3. Verify your email address.
+            4. Go to Tenant Dashboard.
+            5. Open Connect Your Contract.
+            6. Enter the invitation code above.
+
+            ----------------------------------------
+
+            IMPORTANT INFORMATION
+
+            - This invitation expires in 24 hours.
+            - The code can only be used once.
+            - Use the same verified email address
+              associated with your tenant profile.
+
+            If you did not expect this email,
+            please contact your property manager.
+
+            Best regards,
+            iHouse Management
+            """;
+
+        // ======================================
+        // 10. SEND EMAIL AUTOMATICALLY
+        // ======================================
+
+        try
+        {
+            await _emailService.SendEmailAsync(
+                tenant.Email!,
+                subject,
+                body);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to send invitation for Tenant {TenantId}",
+                tenantId);
+
+            // Invalidate the newly created code
+            // if SMTP sending fails.
+            try
+            {
+                await _context.TenantInvitations
+                    .Where(i =>
+                        i.Id == invitation.Id &&
+                        i.RedeemedAt == null)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(
+                            i => i.ExpiresAt,
+                            DateTime.UtcNow));
+            }
+            catch (Exception revokeException)
+            {
+                _logger.LogError(
+                    revokeException,
+                    "Could not invalidate invitation {InvitationId}",
+                    invitation.Id);
+            }
+
+            TempData["Error"] =
+                "Invitation email could not be confirmed as sent. " +
+                "Please check SMTP settings and server logs.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = tenantId });
+        }
+
+        // ======================================
+        // 11. EXPIRE OLD UNUSED CODES
+        // ======================================
+
+        try
+        {
+            await _context.TenantInvitations
+                .Where(i =>
+                    i.TenantId == tenantId &&
+                    i.Id != invitation.Id &&
+                    i.RedeemedAt == null &&
+                    i.ExpiresAt > now)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(
+                        i => i.ExpiresAt,
+                        now));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to expire old invitations for Tenant {TenantId}",
+                tenantId);
+
+            TempData["Error"] =
+                "Email was accepted by SMTP, but old codes " +
+                "could not be invalidated. Contact the administrator.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = tenantId });
+        }
+
+        // ======================================
+        // 12. SHOW CODE TO ADMIN
+        // ======================================
+
         TempData["InvitationCode"] = code;
+
         TempData["InvitationTenantId"] = tenantId;
+
         TempData["Success"] =
-            "Invitation created successfully. Copy the code and share it securely with the tenant.";
+            $"Invitation generated and email sent to {tenant.Email}.";
 
         return RedirectToAction(
             nameof(Details),
@@ -334,7 +524,8 @@ public class TenantsController : Controller
     // VALIDATION HELPERS
     // ==========================================
 
-    private void ValidateInput(TenantFormViewModel model)
+    private void ValidateInput(
+        TenantFormViewModel model)
     {
         if (string.IsNullOrWhiteSpace(model.FullName))
         {

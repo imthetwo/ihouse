@@ -1,303 +1,180 @@
-
 @{
-    ViewData["Title"] = "Check Your Email - iHouse";
-    Layout = "_Layout";
+	ViewData["Title"] = "Check Your Email - iHouse";
 
-    var notice = TempData["EmailNotice"] as string;
+	// Independent authentication page.
+	// Do not render the admin sidebar or dashboard.
+	Layout = null;
+
+	var notice = TempData["EmailNotice"] as string;
 }
 
-<style>
-    .verify-page {
-        min-height: calc(100vh - 100px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 50px 20px;
-        background:
-            radial-gradient(
-                circle at 50% 0%,
-                #e0ecff 0%,
-                transparent 50%
-            ),
-            #f5f8fd;
-    }
+<!DOCTYPE html>
+<html lang="en">
 
-    .verify-card {
-        width: 100%;
-        max-width: 480px;
-        padding: 36px;
-        background: #ffffff;
-        border: 1px solid #e7edf5;
-        border-radius: 22px;
-        box-shadow:
-            0 18px 55px rgba(25, 55, 100, 0.07);
-    }
+<head>
+	<meta charset="utf-8" />
 
-    .verify-brand {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        font-size: 24px;
-        font-weight: 750;
-        color: #0866d9;
-        margin-bottom: 28px;
-    }
+	<meta name="viewport"
+		  content="width=device-width, initial-scale=1.0" />
 
-    .verify-brand i {
-        font-size: 27px;
-    }
+	<title>@ViewData["Title"]</title>
 
-    .verify-icon {
-        width: 86px;
-        height: 86px;
-        margin: 0 auto 24px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #eaf2ff;
-        border-radius: 50%;
-        color: #0866d9;
-    }
+	<!-- Bootstrap Icons -->
+	<link rel="stylesheet"
+		  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
 
-    .verify-icon i {
-        font-size: 40px;
-    }
+	<!-- Page CSS -->
+	<link rel="stylesheet"
+		  href="~/css/register-confirmation.css"
+		  asp-append-version="true" />
+</head>
 
-    .verify-title {
-        font-size: 27px;
-        font-weight: 750;
-        color: #183153;
-        letter-spacing: -0.6px;
-        text-align: center;
-        margin-bottom: 12px;
-    }
+<body>
 
-    .verify-description {
-        font-size: 14px;
-        line-height: 1.8;
-        text-align: center;
-        color: #64748b;
-        margin-bottom: 24px;
-    }
+	<main class="verify-page">
 
-    .verify-notice {
-        display: flex;
-        gap: 10px;
-        padding: 14px;
-        margin-bottom: 22px;
-        border-radius: 12px;
-        background: #eef6ff;
-        color: #24568c;
-        font-size: 13px;
-        line-height: 1.6;
-    }
+		<div class="verify-card">
 
-    .verify-notice i {
-        font-size: 17px;
-        flex-shrink: 0;
-    }
+			<!-- BRAND -->
+			<div class="verify-brand">
+				<div class="verify-brand-icon">
+					<i class="bi bi-house-door-fill"></i>
+				</div>
 
-    .verify-steps {
-        padding: 22px;
-        background: #f5f8ff;
-        border-radius: 14px;
-        margin-bottom: 22px;
-    }
+				<span>iHouse</span>
+			</div>
 
-    .verify-steps-title {
-        font-size: 14px;
-        font-weight: 700;
-        color: #183153;
-        margin-bottom: 18px;
-    }
+			<!-- EMAIL ICON -->
+			<div class="verify-icon">
+				<i class="bi bi-envelope-check"></i>
+			</div>
 
-    .verify-step {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
-        color: #475569;
-        font-size: 13px;
-    }
+			<!-- HEADING -->
+			<h1 class="verify-title">
+				Check your email
+			</h1>
 
-    .verify-step:last-child {
-        margin-bottom: 0;
-    }
+			<p class="verify-description">
+				Your account has been created.
+				Please open your inbox and click
+				the verification link to activate
+				your iHouse account.
+			</p>
 
-    .verify-step-number {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 27px;
-        height: 27px;
-        flex-shrink: 0;
-        border-radius: 50%;
-        background: #dbeafe;
-        color: #0866d9;
-        font-size: 12px;
-        font-weight: 700;
-    }
+			<!-- SERVER NOTICE -->
+			@if (!string.IsNullOrWhiteSpace(notice))
+			{
+				<div class="verify-notice"
+					 id="verifyNotice"
+					 role="status">
 
-    .verify-security {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        margin-bottom: 24px;
-        font-size: 12px;
-        color: #64748b;
-        line-height: 1.7;
-    }
+					<i class="bi bi-info-circle"></i>
 
-    .verify-security i {
-        font-size: 17px;
-        flex-shrink: 0;
-        color: #64748b;
-    }
+					<span class="verify-notice-text">
+						@notice
+					</span>
 
-    .verify-login-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        width: 100%;
-        min-height: 48px;
-        border-radius: 11px;
-        background: #0866d9;
-        color: #ffffff;
-        font-size: 14px;
-        font-weight: 600;
-        text-decoration: none;
-        transition: 0.2s ease;
-    }
+					<button type="button"
+							class="verify-notice-close"
+							id="dismissVerifyNotice"
+							aria-label="Dismiss notification">
 
-    .verify-login-btn:hover {
-        background: #0755b5;
-        color: #ffffff;
-        transform: translateY(-1px);
-        box-shadow: 0 8px 20px rgba(8, 102, 217, 0.16);
-    }
+						<i class="bi bi-x-lg"></i>
 
-    .verify-footer {
-        margin-top: 22px;
-        text-align: center;
-        color: #94a3b8;
-        font-size: 12px;
-        line-height: 1.7;
-    }
+					</button>
 
-    @@media (max-width: 576px) {
-        .verify-page {
-            min-height: calc(100vh - 70px);
-            padding: 24px 14px;
-        }
+				</div>
+			}
 
-        .verify-card {
-            padding: 26px 22px;
-            border-radius: 18px;
-        }
+			<!-- NEXT STEPS -->
+			<div class="verify-steps">
 
-        .verify-title {
-            font-size: 23px;
-        }
+				<h2 class="verify-steps-title">
+					<i class="bi bi-list-check"></i>
+					What's next?
+				</h2>
 
-        .verify-icon {
-            width: 76px;
-            height: 76px;
-        }
+				<div class="verify-step">
 
-        .verify-steps {
-            padding: 18px;
-        }
-    }
-</style>
+					<span class="verify-step-number">
+						1
+					</span>
 
-<section class="verify-page">
-    <div class="verify-card">
+					<span>
+						Open your email inbox
+					</span>
 
-        <!-- BRAND -->
-        <div class="verify-brand">
-            <i class="bi bi-house-door-fill"></i>
-            <span>iHouse</span>
-        </div>
+				</div>
 
-        <!-- EMAIL ICON -->
-        <div class="verify-icon">
-            <i class="bi bi-envelope-check"></i>
-        </div>
+				<div class="verify-step">
 
-        <!-- HEADING -->
-        <h1 class="verify-title">
-            Check your email
-        </h1>
+					<span class="verify-step-number">
+						2
+					</span>
 
-        <p class="verify-description">
-            Your account has been created.
+					<span>
+						Click the verification link
+					</span>
 
-            Please open your inbox and click the
-            verification link to activate your
-            iHouse account.
-        </p>
+				</div>
 
-        <!-- SERVER NOTICE -->
-        @if (!string.IsNullOrWhiteSpace(notice))
-        {
-            <div class="verify-notice" role="status">
-                <i class="bi bi-info-circle"></i>
-                <span>@notice</span>
-            </div>
-        }
+				<div class="verify-step">
 
-        <!-- NEXT STEPS -->
-        <div class="verify-steps">
+					<span class="verify-step-number">
+						3
+					</span>
 
-            <div class="verify-steps-title">
-                <i class="bi bi-list-check me-2"></i>
-                What's next?
-            </div>
+					<span>
+						Sign in to your account
+					</span>
 
-            <div class="verify-step">
-                <span class="verify-step-number">1</span>
-                <span>Open your email inbox</span>
-            </div>
+				</div>
 
-            <div class="verify-step">
-                <span class="verify-step-number">2</span>
-                <span>Click the verification link</span>
-            </div>
+			</div>
 
-            <div class="verify-step">
-                <span class="verify-step-number">3</span>
-                <span>Sign in to your account</span>
-            </div>
+			<!-- SECURITY NOTICE -->
+			<div class="verify-security">
 
-        </div>
+				<i class="bi bi-shield-check"></i>
 
-        <!-- SECURITY -->
-        <div class="verify-security">
-            <i class="bi bi-shield-check"></i>
+				<span>
+					For your security, your account
+					requires email verification
+					before you can sign in.
+				</span>
 
-            <span>
-                For your security, your account
-                remains inactive until your email
-                address is verified.
-            </span>
-        </div>
+			</div>
 
-        <!-- LOGIN -->
-        <a asp-controller="Account"
-           asp-action="Login"
-           class="verify-login-btn">
+			<!-- LOGIN BUTTON -->
+			<a asp-controller="Account"
+			   asp-action="Login"
+			   class="verify-login-btn">
 
-            <i class="bi bi-arrow-left"></i>
-            Back to Sign In
-        </a>
+				<i class="bi bi-arrow-left"></i>
 
-        <!-- FOOTER -->
-        <p class="verify-footer mb-0">
-            Didn't receive an email?
-            Check your spam or junk folder.
-        </p>
+				Back to Sign In
 
-    </div>
-</section>
+			</a>
+
+			<!-- FOOTER -->
+			<p class="verify-footer">
+
+				Didn't receive an email?
+
+				<span>
+					Check your spam or junk folder.
+				</span>
+
+			</p>
+
+		</div>
+
+	</main>
+
+	<!-- Page JavaScript -->
+	<script src="~/js/register-confirmation.js"
+			asp-append-version="true"
+			defer></script>
+
+</body>
+</html>

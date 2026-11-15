@@ -1,0 +1,319 @@
+﻿
+/* ==========================================
+   IHOUSE - REGISTER CONFIRMATION
+========================================== */
+
+:root {
+    --verify-primary: #0866d9;
+    --verify-primary-hover: #0755b5;
+    --verify-heading: #183153;
+    --verify-text: #475569;
+    --verify-muted: #64748b;
+    --verify-border: #e7edf5;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    color: var(--verify-heading);
+    background: #f5f8fd;
+}
+
+/* ==========================================
+   PAGE LAYOUT
+========================================== */
+
+.verify-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px;
+    background: radial-gradient( circle at 50% 0%, #e0ecff 0%, transparent 55% ), #f5f8fd;
+}
+
+/* ==========================================
+   MAIN CARD
+========================================== */
+
+.verify-card {
+    width: 100%;
+    max-width: 480px;
+    padding: 38px;
+    background: #ffffff;
+    border: 1px solid var(--verify-border);
+    border-radius: 22px;
+    box-shadow: 0 18px 55px rgba(25, 55, 100, 0.07);
+}
+
+/* ==========================================
+   BRAND
+========================================== */
+
+.verify-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 28px;
+    font-size: 24px;
+    font-weight: 750;
+    color: var(--verify-primary);
+}
+
+.verify-brand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 27px;
+}
+
+/* ==========================================
+   EMAIL ICON
+========================================== */
+
+.verify-icon {
+    width: 86px;
+    height: 86px;
+    margin: 0 auto 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #eaf2ff;
+    color: var(--verify-primary);
+    font-size: 40px;
+}
+
+/* ==========================================
+   HEADING
+========================================== */
+
+.verify-title {
+    margin: 0 0 12px;
+    font-size: 27px;
+    font-weight: 750;
+    letter-spacing: -0.6px;
+    text-align: center;
+    color: var(--verify-heading);
+}
+
+.verify-description {
+    margin: 0 0 24px;
+    font-size: 14px;
+    line-height: 1.8;
+    text-align: center;
+    color: var(--verify-muted);
+}
+
+/* ==========================================
+   SERVER NOTICE
+========================================== */
+
+.verify-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px;
+    margin-bottom: 22px;
+    border-radius: 12px;
+    background: #eef6ff;
+    color: #24568c;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+    .verify-notice > i {
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+.verify-notice-text {
+    flex: 1;
+}
+
+.verify-notice-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+}
+
+    .verify-notice-close:hover {
+        background: #dbeafe;
+        color: #183153;
+    }
+
+/* ==========================================
+   NEXT STEPS
+========================================== */
+
+.verify-steps {
+    padding: 22px;
+    margin-bottom: 22px;
+    background: #f5f8ff;
+    border-radius: 14px;
+}
+
+.verify-steps-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 18px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--verify-heading);
+}
+
+.verify-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--verify-text);
+}
+
+    .verify-step:last-child {
+        margin-bottom: 0;
+    }
+
+.verify-step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 27px;
+    height: 27px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #dbeafe;
+    color: var(--verify-primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* ==========================================
+   SECURITY MESSAGE
+========================================== */
+
+.verify-security {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 24px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--verify-muted);
+}
+
+    .verify-security i {
+        flex-shrink: 0;
+        font-size: 17px;
+    }
+
+/* ==========================================
+   LOGIN BUTTON
+========================================== */
+
+.verify-login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 18px;
+    border-radius: 11px;
+    background: var(--verify-primary);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .verify-login-btn:hover {
+        background: var(--verify-primary-hover);
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(8, 102, 217, 0.16);
+    }
+
+    .verify-login-btn:focus-visible,
+    .verify-notice-close:focus-visible {
+        outline: 3px solid #93c5fd;
+        outline-offset: 3px;
+    }
+
+/* ==========================================
+   FOOTER
+========================================== */
+
+.verify-footer {
+    margin: 22px 0 0;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #94a3b8;
+}
+
+    .verify-footer span {
+        display: block;
+    }
+
+/* ==========================================
+   RESPONSIVE
+========================================== */
+
+@media (max-width: 576px) {
+
+    .verify-page {
+        padding: 24px 14px;
+    }
+
+    .verify-card {
+        padding: 28px 22px;
+        border-radius: 18px;
+    }
+
+    .verify-title {
+        font-size: 23px;
+    }
+
+    .verify-icon {
+        width: 76px;
+        height: 76px;
+        font-size: 36px;
+    }
+
+    .verify-steps {
+        padding: 18px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .verify-login-btn {
+        transition: none;
+    }
+
+        .verify-login-btn:hover {
+            transform: none;
+        }
+}

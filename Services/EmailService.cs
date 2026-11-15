@@ -1,3 +1,4 @@
+
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
@@ -18,22 +19,40 @@ public class EmailService
         string subject,
         string body)
     {
-        var sender = _config["Email:Address"]
-            ?? throw new InvalidOperationException("Email address missing.");
+        var sender = _config["Email:Address"];
 
-        var password = _config["Email:Password"]
-            ?? throw new InvalidOperationException("SMTP password missing.");
+        var password = _config["Email:Password"];
+
+        if (string.IsNullOrWhiteSpace(sender))
+        {
+            throw new InvalidOperationException(
+                "Email address is not configured.");
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            throw new InvalidOperationException(
+                "Email password is not configured.");
+        }
 
         var message = new MimeMessage();
 
-        message.From.Add(new MailboxAddress("iHouse", sender));
+        message.From.Add(
+            new MailboxAddress("iHouse Management", sender)
+        );
+
         message.To.Add(MailboxAddress.Parse(to));
+
         message.Subject = subject;
-        message.Body = new TextPart("plain") { Text = body };
+
+        message.Body = new TextPart("plain")
+        {
+            Text = body
+        };
 
         using var smtp = new SmtpClient
         {
-            Timeout = 10000
+            Timeout = 15000
         };
 
         await smtp.ConnectAsync(
@@ -42,8 +61,18 @@ public class EmailService
             SecureSocketOptions.StartTls
         );
 
-        await smtp.AuthenticateAsync(sender, password);
-        await smtp.SendAsync(message);
-        await smtp.DisconnectAsync(true);
+        try
+        {
+            await smtp.AuthenticateAsync(sender, password);
+
+            await smtp.SendAsync(message);
+        }
+        finally
+        {
+            if (smtp.IsConnected)
+            {
+                await smtp.DisconnectAsync(true);
+            }
+        }
     }
 }

@@ -1,0 +1,52 @@
+﻿.contract-date-input {
+    cursor: pointer;
+    background-color: #fff;
+}
+
+    .contract-date-input:hover {
+        border-color: #86b7fe;
+    }
+
+    .contract-date-input:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }
+
+    .contract-date-input::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+    }
+
+#tenantSearchContainer {
+    position: relative;
+}
+
+#tenantSearchResults {
+    display: none;
+    top: 100%;
+    left: 0;
+    z-index: 1050;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+    #tenantSearchResults .list-group-item {
+        border-radius: 0;
+    }
+
+        #tenantSearchResults .list-group-item:hover {
+            background-color: #f0f6ff;
+        }
+
+        #tenantSearchResults .list-group-item:focus {
+            background-color: #eaf2ff;
+            color: #183153;
+        }
+
+#tenantSearch {
+    min-height: 38px;
+}
+
+    #tenantSearch:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }

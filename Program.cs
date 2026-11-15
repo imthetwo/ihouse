@@ -1,3 +1,4 @@
+
 using ihouse.Data;
 using ihouse.Models;
 using ihouse.Services;
@@ -7,35 +8,42 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ================= MVC =================
-
+// =====================================
+// MVC
+// =====================================
 builder.Services.AddControllersWithViews();
 
-// ================= DATABASE =================
-
+// =====================================
+// DATABASE - POSTGRESQL
+// =====================================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(
+{
+    var connectionString =
         builder.Configuration.GetConnectionString("DefaultConnection")
-    )
-);
+        ?? throw new InvalidOperationException(
+            "Database connection is not configured.");
 
-// ================= IDENTITY =================
+    options.UseNpgsql(connectionString, npgsql =>
+    {
+        npgsql.CommandTimeout(30);
+    });
+});
 
+// =====================================
+// ASP.NET CORE IDENTITY
+// =====================================
 builder.Services
     .AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
-        // Password
         options.Password.RequiredLength = 8;
         options.Password.RequireDigit = true;
         options.Password.RequireUppercase = true;
         options.Password.RequireLowercase = true;
         options.Password.RequireNonAlphanumeric = false;
 
-        // Email
         options.User.RequireUniqueEmail = true;
         options.SignIn.RequireConfirmedEmail = true;
 
-        // Account lockout
         options.Lockout.DefaultLockoutTimeSpan =
             TimeSpan.FromMinutes(5);
 
@@ -45,8 +53,9 @@ builder.Services
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// ================= COOKIE =================
-
+// =====================================
+// AUTHENTICATION COOKIE
+// =====================================
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
@@ -55,22 +64,39 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Lax;
+
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    options.SlidingExpiration = true;
 });
 
-// ================= EMAIL SERVICE =================
-
+// =====================================
+// EMAIL SERVICE
+// =====================================
 builder.Services.AddScoped<EmailService>();
 
-// ================= TOKEN =================
-
-// Áp dụng cho cả email confirmation và reset password.
-builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+// =====================================
+// PAYPAL SANDBOX SERVICE
+// =====================================
+builder.Services.AddHttpClient<PayPalService>(client =>
 {
-    options.TokenLifespan = TimeSpan.FromHours(24);
+    client.BaseAddress = new Uri(
+        "https://api-m.sandbox.paypal.com/");
+
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-// ================= RATE LIMITING =================
+// =====================================
+// IDENTITY TOKEN LIFESPAN
+// =====================================
+builder.Services.Configure<DataProtectionTokenProviderOptions>(
+    options =>
+    {
+        options.TokenLifespan = TimeSpan.FromHours(24);
+    });
 
+// =====================================
+// RATE LIMITING
+// =====================================
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = 429;
@@ -85,19 +111,40 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = 10,
                 Window = TimeSpan.FromMinutes(15),
-                QueueLimit = 0
+                QueueLimit = 0,
+                AutoReplenishment = true
             }
         )
     );
 });
 
-// ================= BUILD =================
-
+// =====================================
+// BUILD APPLICATION
+// =====================================
 var app = builder.Build();
 
+// =====================================
+// GLOBAL ERROR HANDLING
+// =====================================
+// Always show a friendly error page,
+// including in Development.
+app.UseExceptionHandler("/Error");
 
-// ================= SEED DEMO ROOMS =================
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 
+app.UseHttpsRedirection();
+
+// =====================================
+// STATIC FILES
+// =====================================
+app.UseStaticFiles();
+
+// =====================================
+// DEVELOPMENT DATA
+// =====================================
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
@@ -108,18 +155,9 @@ if (app.Environment.IsDevelopment())
     await DataRoomImages.SeedAsync(db);
 }
 
-// ================= ERROR HANDLING =================
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
-
-app.UseHttpsRedirection();
-
-// ================= INITIALIZE ROLES =================
-
+// =====================================
+// CREATE IDENTITY ROLES
+// =====================================
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider
@@ -137,21 +175,20 @@ using (var scope = app.Services.CreateScope())
         if (!await roleManager.RoleExistsAsync(role))
         {
             var result = await roleManager.CreateAsync(
-                new IdentityRole(role)
-            );
+                new IdentityRole(role));
 
             if (!result.Succeeded)
             {
                 throw new InvalidOperationException(
-                    $"Cannot create role: {role}"
-                );
+                    $"Cannot create role: {role}");
             }
         }
     }
 }
 
-// ================= MIDDLEWARE =================
-
+// =====================================
+// MIDDLEWARE
+// =====================================
 app.UseRouting();
 
 app.UseRateLimiter();
@@ -159,16 +196,20 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ================= ROUTING =================
-
+// =====================================
+// STATIC ASSETS
+// =====================================
 app.MapStaticAssets();
 
+// =====================================
+// MVC ROUTING
+// =====================================
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}"
-)
+    pattern: "{controller=Account}/{action=Login}/{id?}")
 .WithStaticAssets();
 
-// ================= RUN =================
-
+// =====================================
+// START APPLICATION
+// =====================================
 app.Run();

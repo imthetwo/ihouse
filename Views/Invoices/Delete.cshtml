@@ -1,0 +1,137 @@
+﻿
+@model ihouse.Models.Invoice
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Delete Invoice";
+    Layout = "_AdminLayout";
+
+    var usd = CultureInfo.GetCultureInfo("en-US");
+}
+
+<div class="container-fluid py-4">
+
+    <div class="mb-4">
+        <a asp-controller="Invoices"
+           asp-action="Index"
+           class="text-decoration-none text-muted small">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Invoices
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-xl-6">
+
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- HEADER -->
+                    <div class="text-center mb-4">
+
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger bg-opacity-10 text-danger p-3 mb-3">
+                            <i class="bi bi-exclamation-triangle fs-2"></i>
+                        </div>
+
+                        <h4 class="fw-bold mb-2">
+                            Delete Invoice?
+                        </h4>
+
+                        <p class="text-muted mb-0">
+                            You are about to permanently delete
+                            Invoice #@(Model.Id).
+                        </p>
+
+                    </div>
+
+                    <!-- INVOICE INFORMATION -->
+                    <div class="bg-light border rounded-3 p-4 mb-4">
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Invoice ID</span>
+                            <strong>#@(Model.Id)</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Contract</span>
+                            <strong>#@(Model.ContractId)</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Invoice Date</span>
+                            <strong>
+                                @(Model.InvoiceDate.ToString("dd/MM/yyyy"))
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Due Date</span>
+                            <strong>
+                                @(Model.DueDate.ToString("dd/MM/yyyy"))
+                            </strong>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">
+                                Total Amount
+                            </span>
+
+                            <h5 class="fw-bold text-danger mb-0">
+                                @(Model.TotalAmount.ToString("C2", usd))
+                            </h5>
+                        </div>
+
+                    </div>
+
+                    <!-- WARNING -->
+                    <div class="alert alert-warning rounded-3 mb-4">
+                        <div class="d-flex gap-2">
+
+                            <i class="bi bi-exclamation-triangle"></i>
+
+                            <div class="small">
+                                This action cannot be undone.
+                                The invoice and its invoice items
+                                will be permanently deleted.
+
+                                Invoices with payment activity
+                                cannot be deleted.
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- DELETE FORM -->
+                    <form asp-controller="Invoices"
+                          asp-action="Delete"
+                          asp-route-id="@Model.Id"
+                          method="post">
+
+                        @Html.AntiForgeryToken()
+
+                        <div class="d-flex justify-content-end flex-wrap gap-2">
+
+                            <a asp-controller="Invoices"
+                               asp-action="Index"
+                               class="btn btn-outline-secondary rounded-3 px-4">
+                                Cancel
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-danger rounded-3 px-4">
+                                <i class="bi bi-trash me-2"></i>
+                                Delete Invoice
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

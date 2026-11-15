@@ -16,7 +16,6 @@ namespace ihouse.Models
 
         public Room Room { get; set; } = null!;
 
-
         // Contract information
 
         public DateOnly ContractStartDate { get; set; }
@@ -38,7 +37,6 @@ namespace ihouse.Models
         public PaymentMethod PaymentMethod { get; set; }
 
         public ContractStatus Status { get; set; }
-
 
         // Relationships
 

@@ -1,3 +1,4 @@
+
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
@@ -19,17 +20,20 @@ public class TenantDashboardController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ILogger<TenantDashboardController> _logger;
 
     public TenantDashboardController(
         ApplicationDbContext db,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        ILogger<TenantDashboardController> logger)
     {
         _db = db;
         _userManager = userManager;
+        _logger = logger;
     }
 
     // ==========================================
-    // GET: /TenantDashboard
+    // GET: TENANT DASHBOARD
     // ==========================================
 
     [HttpGet]
@@ -45,13 +49,9 @@ public class TenantDashboardController : Controller
             .FirstOrDefaultAsync(t =>
                 t.ApplicationUserId == userId);
 
-        // Not linked -> Connect first
         if (tenant == null)
-        {
             return RedirectToAction(nameof(Connect));
-        }
 
-        // Linked -> Real Dashboard
         var model = new TenantDashboardViewModel
         {
             TenantLinked = true,
@@ -243,7 +243,7 @@ public class TenantDashboardController : Controller
     }
 
     // ==========================================
-    // GET: /TenantDashboard/Connect
+    // GET: CONNECT CONTRACT
     // ==========================================
 
     [HttpGet]
@@ -251,7 +251,6 @@ public class TenantDashboardController : Controller
     {
         var tenant = await GetCurrentTenantAsync();
 
-        // Already linked -> Dashboard
         if (tenant != null)
             return RedirectToAction(nameof(Index));
 
@@ -259,7 +258,7 @@ public class TenantDashboardController : Controller
     }
 
     // ==========================================
-    // POST: /TenantDashboard/Connect
+    // POST: CONNECT CONTRACT
     // ==========================================
 
     [HttpPost]
@@ -302,166 +301,184 @@ public class TenantDashboardController : Controller
             return View();
         }
 
-        // Generate the same SHA-256 hash used
-        // by TenantsController.GenerateInvitation
+        // Already connected
+        var existingTenant = await GetCurrentTenantAsync();
+
+        if (existingTenant != null)
+            return RedirectToAction(nameof(Index));
+
+        // Generate invitation code hash
         var codeHash = Convert.ToHexString(
             SHA256.HashData(
                 Encoding.UTF8.GetBytes(code.Trim())));
 
         try
         {
-            // All redemption changes must be atomic.
-            await using var transaction =
-                await _db.Database.BeginTransactionAsync(
-                    IsolationLevel.Serializable);
+            // ======================================
+            // EXECUTION STRATEGY
+            // ======================================
 
-            var now = DateTime.UtcNow;
+            var strategy =
+                _db.Database.CreateExecutionStrategy();
 
-            // ==================================
-            // 1. VALIDATE INVITATION
-            // ==================================
+            string? errorMessage =
+                await strategy.ExecuteAsync(async () =>
+                {
+                    // All operations run inside
+                    // one retryable transaction.
 
-            var invitation = await _db.TenantInvitations
-                .AsNoTracking()
-                .FirstOrDefaultAsync(i =>
-                    i.CodeHash == codeHash &&
-                    i.RedeemedAt == null &&
-                    i.ExpiresAt > now);
+                    await using var transaction =
+                        await _db.Database.BeginTransactionAsync(
+                            IsolationLevel.Serializable);
 
-            if (invitation == null)
+                    var now = DateTime.UtcNow;
+
+                    // ==================================
+                    // 1. VALIDATE INVITATION
+                    // ==================================
+
+                    var invitation = await _db.TenantInvitations
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(i =>
+                            i.CodeHash == codeHash &&
+                            i.RedeemedAt == null &&
+                            i.ExpiresAt > now);
+
+                    if (invitation == null)
+                    {
+                        return
+                            "Invitation code is invalid, expired, or already used.";
+                    }
+
+                    // ==================================
+                    // 2. VALIDATE TENANT
+                    // ==================================
+
+                    var tenant = await _db.Tenants
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(t =>
+                            t.Id == invitation.TenantId);
+
+                    if (tenant == null ||
+                        !string.IsNullOrWhiteSpace(
+                            tenant.ApplicationUserId))
+                    {
+                        return
+                            "This tenant profile is already linked or unavailable.";
+                    }
+
+                    // ==================================
+                    // 3. VERIFY EMAIL
+                    // ==================================
+
+                    if (!string.Equals(
+                            tenant.Email?.Trim(),
+                            email,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        return
+                            "This invitation does not belong to your account.";
+                    }
+
+                    // ==================================
+                    // 4. CHECK ACCOUNT LINK
+                    // ==================================
+
+                    var alreadyLinked = await _db.Tenants
+                        .AnyAsync(t =>
+                            t.ApplicationUserId == user.Id);
+
+                    if (alreadyLinked)
+                    {
+                        return
+                            "Your account is already linked to a tenant.";
+                    }
+
+                    // ==================================
+                    // 5. VALIDATE CONTRACT
+                    // ==================================
+
+                    var contractLink = await _db.ContractTenants
+                        .AsNoTracking()
+                        .Include(ct => ct.Contract)
+                        .FirstOrDefaultAsync(ct =>
+                            ct.TenantId == invitation.TenantId &&
+                            ct.ContractId == invitation.ContractId);
+
+                    if (contractLink == null ||
+                        contractLink.Contract.Status.ToString()
+                            != "Active")
+                    {
+                        return
+                            "The rental contract is no longer active.";
+                    }
+
+                    // ==================================
+                    // 6. LINK TENANT ACCOUNT
+                    // ==================================
+
+                    var linkedRows = await _db.Tenants
+                        .Where(t =>
+                            t.Id == tenant.Id &&
+                            t.ApplicationUserId == null)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(
+                                t => t.ApplicationUserId,
+                                user.Id));
+
+                    if (linkedRows != 1)
+                    {
+                        return
+                            "This tenant profile is no longer available.";
+                    }
+
+                    // ==================================
+                    // 7. REDEEM INVITATION
+                    // ==================================
+
+                    var redeemedRows =
+                        await _db.TenantInvitations
+                            .Where(i =>
+                                i.Id == invitation.Id &&
+                                i.RedeemedAt == null &&
+                                i.ExpiresAt > now)
+                            .ExecuteUpdateAsync(setters => setters
+                                .SetProperty(
+                                    i => i.RedeemedAt,
+                                    (DateTime?)now)
+                                .SetProperty(
+                                    i => i.RedeemedByUserId,
+                                    user.Id));
+
+                    if (redeemedRows != 1)
+                    {
+                        // Transaction will roll back
+                        // the tenant link automatically.
+                        return
+                            "This invitation is no longer available.";
+                    }
+
+                    // ==================================
+                    // 8. COMMIT TRANSACTION
+                    // ==================================
+
+                    await transaction.CommitAsync();
+
+                    return (string?)null;
+                });
+
+            // ======================================
+            // HANDLE VALIDATION ERRORS
+            // ======================================
+
+            if (errorMessage != null)
             {
                 ModelState.AddModelError(
                     "",
-                    "Invitation code is invalid, expired, or already used.");
+                    errorMessage);
 
                 return View();
             }
-
-            // ==================================
-            // 2. VALIDATE TENANT
-            // ==================================
-
-            var tenant = await _db.Tenants
-                .AsNoTracking()
-                .FirstOrDefaultAsync(t =>
-                    t.Id == invitation.TenantId);
-
-            if (tenant == null ||
-                !string.IsNullOrWhiteSpace(
-                    tenant.ApplicationUserId))
-            {
-                ModelState.AddModelError(
-                    "",
-                    "This tenant profile is already linked or unavailable.");
-
-                return View();
-            }
-
-            // ==================================
-            // 3. MATCH VERIFIED EMAIL
-            // ==================================
-
-            if (!string.Equals(
-                    tenant.Email?.Trim(),
-                    email,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                ModelState.AddModelError(
-                    "",
-                    "This invitation does not belong to your account.");
-
-                return View();
-            }
-
-            // ==================================
-            // 4. CHECK EXISTING ACCOUNT LINK
-            // ==================================
-
-            var alreadyLinked = await _db.Tenants
-                .AnyAsync(t =>
-                    t.ApplicationUserId == user.Id);
-
-            if (alreadyLinked)
-            {
-                ModelState.AddModelError(
-                    "",
-                    "Your account is already linked to a tenant.");
-
-                return View();
-            }
-
-            // ==================================
-            // 5. VALIDATE CONTRACT
-            // ==================================
-
-            var contractLink = await _db.ContractTenants
-                .AsNoTracking()
-                .Include(ct => ct.Contract)
-                .FirstOrDefaultAsync(ct =>
-                    ct.TenantId == invitation.TenantId &&
-                    ct.ContractId == invitation.ContractId);
-
-            if (contractLink == null ||
-                contractLink.Contract.Status.ToString()
-                    != "Active")
-            {
-                ModelState.AddModelError(
-                    "",
-                    "The rental contract is no longer active.");
-
-                return View();
-            }
-
-            // ==================================
-            // 6. LINK ACCOUNT TO TENANT
-            // ==================================
-
-            var linkedRows = await _db.Tenants
-                .Where(t =>
-                    t.Id == tenant.Id &&
-                    t.ApplicationUserId == null)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(
-                        t => t.ApplicationUserId,
-                        user.Id));
-
-            if (linkedRows != 1)
-            {
-                ModelState.AddModelError(
-                    "",
-                    "This tenant profile is no longer available.");
-
-                return View();
-            }
-
-            // ==================================
-            // 7. REDEEM INVITATION ONCE
-            // ==================================
-
-            var redeemedRows = await _db.TenantInvitations
-                .Where(i =>
-                    i.Id == invitation.Id &&
-                    i.RedeemedAt == null &&
-                    i.ExpiresAt > now)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(
-                        i => i.RedeemedAt,
-                        (DateTime?)now)
-                    .SetProperty(
-                        i => i.RedeemedByUserId,
-                        user.Id));
-
-            if (redeemedRows != 1)
-            {
-                ModelState.AddModelError(
-                    "",
-                    "This invitation is no longer available.");
-
-                return View();
-            }
-
-            // Both operations succeeded.
-            await transaction.CommitAsync();
 
             TempData["Success"] =
                 "Contract connected successfully.";
@@ -473,15 +490,36 @@ public class TenantDashboardController : Controller
                   ex.SqlState == "40P01" ||
                   ex.SqlState == "23505")
         {
+            _logger.LogWarning(
+                ex,
+                "Contract invitation conflict for user {UserId}",
+                user.Id);
+
             ModelState.AddModelError(
                 "",
-                "The invitation could not be processed. Please try again.");
+                "We couldn't complete your request. Please try again.");
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex)
         {
+            _logger.LogError(
+                ex,
+                "Failed to connect contract for user {UserId}",
+                user.Id);
+
             ModelState.AddModelError(
                 "",
-                "Unable to connect the contract. Please try again.");
+                "Unable to connect your contract. Please try again.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Unexpected contract connection error for user {UserId}",
+                user.Id);
+
+            ModelState.AddModelError(
+                "",
+                "Something went wrong. Please try again later.");
         }
 
         return View();
@@ -496,8 +534,8 @@ public class TenantDashboardController : Controller
     public async Task<IActionResult> CreateMaintenanceRequest(
         string description)
     {
-        if (string.IsNullOrWhiteSpace(description)
-            || description.Trim().Length > 2000)
+        if (string.IsNullOrWhiteSpace(description) ||
+            description.Trim().Length > 2000)
         {
             TempData["Error"] =
                 "Please enter an issue description (max 2000 characters).";
@@ -542,6 +580,7 @@ public class TenantDashboardController : Controller
         };
 
         _db.MaintenanceRequests.Add(request);
+
         await _db.SaveChangesAsync();
 
         TempData["Success"] =

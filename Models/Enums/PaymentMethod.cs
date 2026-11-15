@@ -1,9 +1,7 @@
-﻿namespace ihouse.Models.Enums
+﻿namespace ihouse.Models.Enums;
+
+public enum PaymentMethod
 {
-    public enum PaymentMethod
-    {
-        Cash,
-        BankTransfer,
-        MoMo
-    }
+    Cash = 0,
+    PayPal = 3
 }

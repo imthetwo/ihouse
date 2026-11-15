@@ -1,0 +1,553 @@
+﻿@model ihouse.Models.Invoice
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Invoice Checkout";
+    Layout = "_TenantLayout";
+
+    var usd = CultureInfo.GetCultureInfo("en-US");
+
+    decimal total = Model.TotalAmount;
+    decimal paid = Model.Payments?.Sum(p => p.Amount) ?? 0m;
+    decimal balance = Math.Max(0m, total - paid);
+
+    bool isPaid = balance <= 0m;
+    bool isOverdue = !isPaid &&
+        Model.DueDate < DateOnly.FromDateTime(DateTime.Today);
+
+    bool hasPendingCash = ViewBag.HasPendingCashRequest == true;
+    bool hasPendingPayPal = ViewBag.HasPendingPayPal == true;
+
+    bool cashAvailable = !hasPendingCash && !hasPendingPayPal;
+    bool paypalAvailable = !hasPendingCash;
+    bool selectPayPal = hasPendingPayPal;
+}
+
+<link rel="stylesheet"
+      href="~/css/tenant-checkout.css"
+      asp-append-version="true" />
+
+<div class="container checkout-page py-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Invoice Checkout</h3>
+            <p class="text-muted mb-0">
+                Review your invoice and complete your payment.
+            </p>
+        </div>
+
+        <a asp-controller="TenantDashboard"
+           asp-action="Index"
+           class="btn btn-outline-secondary checkout-back-btn">
+            <i class="bi bi-arrow-left me-2"></i>
+            Back to Dashboard
+        </a>
+    </div>
+
+    <!-- FEEDBACK -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success rounded-3 mb-4">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger rounded-3 mb-4">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <!-- LEFT COLUMN -->
+        <div class="col-lg-7">
+
+            <!-- INVOICE DETAILS -->
+            <div class="card checkout-card mb-4">
+                <div class="card-body p-4">
+
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                        <div>
+                            <div class="checkout-section-label mb-2">
+                                INVOICE DETAILS
+                            </div>
+
+                            <h5 class="fw-bold mb-1">
+                                Invoice #@Model.Id
+                            </h5>
+
+                            <span class="text-muted small">
+                                Contract #@Model.ContractId
+                            </span>
+                        </div>
+
+                        @if (isPaid)
+                        {
+                            <span class="checkout-status checkout-status-paid">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Paid
+                            </span>
+                        }
+                        else if (isOverdue)
+                        {
+                            <span class="checkout-status checkout-status-overdue">
+                                <i class="bi bi-exclamation-circle"></i>
+                                Overdue
+                            </span>
+                        }
+                        else if (paid > 0)
+                        {
+                            <span class="checkout-status checkout-status-partial">
+                                <i class="bi bi-clock"></i>
+                                Partially Paid
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="checkout-status checkout-status-unpaid">
+                                <i class="bi bi-clock"></i>
+                                Unpaid
+                            </span>
+                        }
+                    </div>
+
+                    <!-- INVOICE DATES -->
+                    <div class="checkout-info-grid mb-4">
+                        <div class="checkout-info-item">
+                            <span>Invoice Date</span>
+                            <strong>
+                                @Model.InvoiceDate.ToString("dd/MM/yyyy")
+                            </strong>
+                        </div>
+
+                        <div class="checkout-info-item">
+                            <span>Due Date</span>
+                            <strong>
+                                @Model.DueDate.ToString("dd/MM/yyyy")
+                            </strong>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">
+                            Invoice Breakdown
+                        </h6>
+                        <span class="text-muted small">USD</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table checkout-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @if (Model.InvoiceItems != null &&
+                                     Model.InvoiceItems.Any())
+                                {
+                                    @foreach (var item in Model.InvoiceItems)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong class="d-block">
+                                                    @item.ItemType
+                                                </strong>
+
+                                                @if (!string.IsNullOrWhiteSpace(item.Description))
+                                                {
+                                                    <small class="text-muted">
+                                                        @item.Description
+                                                    </small>
+                                                }
+                                            </td>
+
+                                            <td class="text-end fw-semibold">
+                                                @item.Amount.ToString("C2", usd)
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="2"
+                                            class="text-center text-muted py-4">
+                                            No invoice items recorded.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- PAYMENT HISTORY -->
+            <div class="card checkout-card">
+                <div class="card-body p-4">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <div class="checkout-section-label mb-2">
+                                TRANSACTIONS
+                            </div>
+                            <h5 class="fw-bold mb-0">
+                                Payment History
+                            </h5>
+                        </div>
+
+                        <div class="checkout-header-icon">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                    </div>
+
+                    @if (Model.Payments != null &&
+                         Model.Payments.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table checkout-table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Method</th>
+                                        <th>Date (UTC)</th>
+                                        <th class="text-end">Amount</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var payment in Model.Payments
+                                        .OrderByDescending(p => p.PaymentDate))
+                                    {
+                                        <tr>
+                                            <td class="fw-semibold">
+                                                @payment.PaymentMethod
+                                            </td>
+
+                                            <td class="text-muted">
+                                                @payment.PaymentDate.ToString("dd/MM/yyyy HH:mm")
+                                            </td>
+
+                                            <td class="text-end fw-semibold text-success">
+                                                @payment.Amount.ToString("C2", usd)
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="checkout-empty-state">
+                            <div class="checkout-empty-icon">
+                                <i class="bi bi-receipt"></i>
+                            </div>
+
+                            <h6 class="fw-semibold mb-1">
+                                No payments yet
+                            </h6>
+
+                            <p class="text-muted small mb-0">
+                                Completed payments will appear here.
+                            </p>
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-lg-5">
+
+            <!-- PAYMENT SUMMARY -->
+            <div class="card checkout-card mb-4">
+                <div class="card-body p-4">
+
+                    <div class="checkout-section-label mb-2">
+                        ORDER SUMMARY
+                    </div>
+
+                    <h5 class="fw-bold mb-4">
+                        Payment Summary
+                    </h5>
+
+                    <div class="checkout-summary-row">
+                        <span>Total Amount</span>
+                        <strong>@total.ToString("C2", usd)</strong>
+                    </div>
+
+                    <div class="checkout-summary-row">
+                        <span>Amount Paid</span>
+                        <strong class="text-success">
+                            @paid.ToString("C2", usd)
+                        </strong>
+                    </div>
+
+                    <div class="checkout-summary-divider"></div>
+
+                    <div class="checkout-total-row">
+                        <div>
+                            <span class="d-block fw-semibold">
+                                Balance Due
+                            </span>
+                            <small class="text-muted">
+                                Remaining amount to pay
+                            </small>
+                        </div>
+
+                        <h4 class="fw-bold mb-0">
+                            @balance.ToString("C2", usd)
+                        </h4>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- PAYMENT METHOD -->
+            <div class="card checkout-card">
+                <div class="card-body p-4">
+
+                    <div class="checkout-section-label mb-2">
+                        CHECKOUT
+                    </div>
+
+                    <h5 class="fw-bold mb-1">
+                        Select Payment Method
+                    </h5>
+
+                    <p class="text-muted small mb-4">
+                        Choose how you'd like to pay.
+                    </p>
+
+                    @if (isPaid)
+                    {
+                        <div class="checkout-complete">
+                            <div class="checkout-complete-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+
+                            <h5 class="fw-bold mt-3 mb-2">
+                                Payment Completed
+                            </h5>
+
+                            <p class="text-muted small mb-0">
+                                Your invoice has been fully paid.
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- CASH OPTION -->
+                        <div class="payment-option @(selectPayPal ? "" : "selected") @(cashAvailable ? "" : "payment-option-disabled")"
+                             id="cashOption">
+
+                            <input type="radio"
+                                   id="cashMethod"
+                                   name="paymentMethod"
+                                   value="Cash"
+                                   checked="@(!selectPayPal)"
+                                   disabled="@(!cashAvailable)" />
+
+                            <label for="cashMethod" class="payment-label">
+                                <span class="payment-icon cash-icon">
+                                    <i class="bi bi-cash-stack"></i>
+                                </span>
+
+                                <span class="payment-option-content">
+                                    <strong class="payment-option-title">
+                                        Cash Payment
+                                    </strong>
+
+                                    <small class="payment-option-description">
+                                        Pay directly to property staff
+                                    </small>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- PAYPAL OPTION -->
+                        <div class="payment-option mt-3 @(selectPayPal ? "selected" : "") @(paypalAvailable ? "" : "payment-option-disabled")"
+                             id="paypalOption">
+
+                            <input type="radio"
+                                   id="paypalMethod"
+                                   name="paymentMethod"
+                                   value="PayPal"
+                                   checked="@selectPayPal"
+                                   disabled="@(!paypalAvailable)" />
+
+                            <label for="paypalMethod" class="payment-label">
+                                <span class="payment-icon paypal-icon">
+                                    <i class="bi bi-credit-card-2-front"></i>
+                                </span>
+
+                                <span class="payment-option-content">
+                                    <span class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <strong class="payment-option-title">
+                                            PayPal Sandbox
+                                        </strong>
+
+                                        @if (hasPendingPayPal)
+                                        {
+                                            <span class="payment-progress-badge">
+                                                <span class="payment-progress-dot"></span>
+                                                Awaiting confirmation
+                                            </span>
+                                        }
+                                    </span>
+
+                                    <small class="payment-option-description">
+                                        Secure online test payment in USD
+                                    </small>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- CASH DETAILS -->
+                        <div id="cashInfo"
+                             class="payment-method-details @(selectPayPal ? "d-none" : "")">
+
+                            @if (hasPendingCash)
+                            {
+                                <div class="checkout-inline-status">
+                                    <i class="bi bi-clock-history"></i>
+                                    <div>
+                                        <strong>
+                                            Awaiting staff confirmation
+                                        </strong>
+                                        <p class="mb-0">
+                                            Your cash payment request has been submitted.
+                                        </p>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="payment-method-note mb-0">
+                                    Submit a request and pay property staff
+                                    directly. Your invoice will update after
+                                    staff confirms the payment.
+                                </p>
+                            }
+                        </div>
+
+                        <!-- PAYPAL DETAILS -->
+                        <div id="paypalInfo"
+                             class="payment-method-details @(selectPayPal ? "" : "d-none")">
+
+                            @if (hasPendingPayPal)
+                            {
+                                <div class="checkout-inline-status">
+                                    <i class="bi bi-arrow-repeat"></i>
+
+                                    <div>
+                                        <strong>
+                                            Payment awaiting confirmation
+                                        </strong>
+
+                                        <p class="mb-0">
+                                            Check your payment status before trying again.
+                                        </p>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="payment-method-note mb-0">
+                                    You'll be redirected to PayPal Sandbox
+                                    to complete your payment.
+                                </p>
+                            }
+                        </div>
+
+                        <!-- CASH FORM -->
+                        <form asp-controller="TenantPayments"
+                              asp-action="RequestCash"
+                              method="post"
+                              id="cashPaymentForm"
+                              class="payment-action-form @(selectPayPal ? "d-none" : "")">
+
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden"
+                                   name="invoiceId"
+                                   value="@Model.Id" />
+
+                            <button type="submit"
+                                    id="cashPaymentButton"
+                                    class="btn checkout-primary-btn w-100"
+                                    disabled="@(!cashAvailable)">
+
+                                @if (hasPendingCash)
+                                {
+                                    <i class="bi bi-clock-history me-2"></i>
+                                    <span>Awaiting Confirmation</span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-cash-stack me-2"></i>
+                                    <span>Request Cash Payment</span>
+                                }
+                            </button>
+                        </form>
+
+                        <!-- PAYPAL FORM -->
+                        <form asp-controller="TenantPayments"
+                              asp-action="PayWithPayPal"
+                              method="post"
+                              id="paypalPaymentForm"
+                              class="payment-action-form @(selectPayPal ? "" : "d-none")">
+
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden"
+                                   name="invoiceId"
+                                   value="@Model.Id" />
+
+                            <button type="submit"
+                                    id="paypalPaymentButton"
+                                    class="btn checkout-paypal-btn w-100"
+                                    disabled="@(!paypalAvailable)">
+
+                                @if (hasPendingPayPal)
+                                {
+                                    <i class="bi bi-arrow-repeat me-2"></i>
+                                    <span>Check Payment Status</span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-credit-card me-2"></i>
+                                    <span>Pay with PayPal</span>
+                                }
+                            </button>
+                        </form>
+
+                        <div class="checkout-security-footer">
+                            <i class="bi bi-shield-check"></i>
+                            <span>
+                                Payment is recorded after verification.
+                            </span>
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="~/js/tenant-checkout.js"
+        asp-append-version="true"
+        defer></script>

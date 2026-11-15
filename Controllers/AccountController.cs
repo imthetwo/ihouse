@@ -31,7 +31,9 @@ public class AccountController : Controller
         _logger = logger;
     }
 
-    // ================= LOGIN =================
+    // ==========================================
+    // LOGIN - GET
+    // ==========================================
 
     [AllowAnonymous]
     [HttpGet]
@@ -40,16 +42,24 @@ public class AccountController : Controller
         return View(new LoginViewModel());
     }
 
+    // ==========================================
+    // LOGIN - POST
+    // ==========================================
+
     [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     [EnableRateLimiting("auth")]
-    public async Task<IActionResult> Login(LoginViewModel model)
+    public async Task<IActionResult> Login(
+        LoginViewModel model)
     {
         if (!ModelState.IsValid)
+        {
             return View(model);
+        }
 
-        var user = await _users.FindByEmailAsync(model.Email);
+        var user = await _users.FindByEmailAsync(
+            model.Email.Trim());
 
         if (user == null)
         {
@@ -69,13 +79,21 @@ public class AccountController : Controller
         if (result.Succeeded)
         {
             if (await _users.IsInRoleAsync(user, "Admin"))
+            {
                 return RedirectToAction("Index", "Admin");
+            }
 
             if (await _users.IsInRoleAsync(user, "Staff"))
+            {
                 return RedirectToAction("Index", "Staff");
+            }
 
             if (await _users.IsInRoleAsync(user, "Tenant"))
-                return RedirectToAction("Index", "TenantDashboard");
+            {
+                return RedirectToAction(
+                    "Index",
+                    "TenantDashboard");
+            }
 
             await _signIn.SignOutAsync();
 
@@ -108,7 +126,9 @@ public class AccountController : Controller
         return View(model);
     }
 
-    // ================= REGISTER =================
+    // ==========================================
+    // REGISTER - GET
+    // ==========================================
 
     [AllowAnonymous]
     [HttpGet]
@@ -117,30 +137,71 @@ public class AccountController : Controller
         return View(new RegisterViewModel());
     }
 
+    // ==========================================
+    // REGISTER - POST
+    // ==========================================
+
     [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     [EnableRateLimiting("auth")]
-    public async Task<IActionResult> Register(RegisterViewModel model)
+    public async Task<IActionResult> Register(
+        RegisterViewModel model)
     {
         if (!ModelState.IsValid)
+        {
             return View(model);
+        }
 
         var email = model.Email.Trim();
 
-        // Check whether the account already exists.
-        var existingUser = await _users.FindByEmailAsync(email);
+        var existingUser =
+            await _users.FindByEmailAsync(email);
 
+        // Existing account
         if (existingUser != null)
         {
+            // Email has not been confirmed.
+            if (!await _users.IsEmailConfirmedAsync(existingUser))
+            {
+                try
+                {
+                    await SendConfirmationEmailAsync(
+                        existingUser);
+
+                    TempData["EmailNotice"] =
+                        "Please check your inbox and spam folder " +
+                        "for an email verification link. " +
+                        "Your account must be verified before signing in.";
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Failed to resend verification email for user {UserId}",
+                        existingUser.Id);
+
+                    TempData["EmailNotice"] =
+                        "Your email is awaiting verification. " +
+                        "If the message has not arrived, " +
+                        "please use Resend Verification Email.";
+                }
+
+                // Do not overwrite existing credentials.
+                return RedirectToAction(
+                    nameof(RegisterConfirmation));
+            }
+
+            // Email already confirmed.
             ModelState.AddModelError(
                 nameof(model.Email),
-                "This email is already registered. If you have not verified it, use Resend Verification Email.");
+                "This email is already registered. " +
+                "Please sign in instead.");
 
             return View(model);
         }
 
-        // Create an unverified account.
+        // New account
         var user = new ApplicationUser
         {
             FullName = model.FullName.Trim(),
@@ -165,17 +226,22 @@ public class AccountController : Controller
             return View(model);
         }
 
-        // All public registrations receive Tenant role.
+        // Public registration creates Tenant account.
         var roleResult = await _users.AddToRoleAsync(
             user,
             "Tenant");
 
         if (!roleResult.Succeeded)
         {
-            var rollback = await _users.DeleteAsync(user);
+            var rollback =
+                await _users.DeleteAsync(user);
 
             if (!rollback.Succeeded)
             {
+                _logger.LogError(
+                    "Failed to roll back registration for user {UserId}",
+                    user.Id);
+
                 throw new InvalidOperationException(
                     "Registration rollback failed.");
             }
@@ -187,31 +253,35 @@ public class AccountController : Controller
             return View(model);
         }
 
-        // Send confirmation email.
         try
         {
             await SendConfirmationEmailAsync(user);
 
             TempData["EmailNotice"] =
-                "A verification email has been submitted for delivery. Please check your inbox and spam folder. Your account cannot sign in until verification is complete.";
+                "A verification email has been submitted for delivery. " +
+                "Please check your inbox and spam folder. " +
+                "You cannot sign in until your email is verified.";
         }
         catch (Exception ex)
         {
             _logger.LogError(
                 ex,
-                "Failed to send confirmation email for user {UserId}",
+                "Failed to send verification email for user {UserId}",
                 user.Id);
 
-            // Keep account pending to allow resend.
             TempData["EmailNotice"] =
-                "Your account is pending verification, but we could not send the verification email. Please use Resend Verification Email. You cannot sign in yet.";
+                "Your account was created but the verification " +
+                "email could not be sent. " +
+                "Please use Resend Verification Email.";
         }
 
         return RedirectToAction(
             nameof(RegisterConfirmation));
     }
 
-    // ================= SEND VERIFICATION EMAIL =================
+    // ==========================================
+    // SEND VERIFICATION EMAIL
+    // ==========================================
 
     private async Task SendConfirmationEmailAsync(
         ApplicationUser user)
@@ -242,13 +312,17 @@ public class AccountController : Controller
             user.Email,
             "iHouse - Verify Your Email",
             $"Welcome to iHouse!\n\n" +
-            $"Please verify your email address by opening the link below:\n\n" +
+            $"Please verify your email address " +
+            $"by opening the link below:\n\n" +
             $"{url}\n\n" +
             $"The verification link is valid for 24 hours.\n\n" +
-            $"If you did not create this account, you can ignore this email.");
+            $"If you did not create this account, " +
+            $"you can ignore this email.");
     }
 
-    // ================= REGISTER CONFIRMATION =================
+    // ==========================================
+    // REGISTER CONFIRMATION
+    // ==========================================
 
     [AllowAnonymous]
     [HttpGet]
@@ -257,7 +331,9 @@ public class AccountController : Controller
         return View();
     }
 
-    // ================= CONFIRM EMAIL =================
+    // ==========================================
+    // CONFIRM EMAIL
+    // ==========================================
 
     [AllowAnonymous]
     [HttpGet]
@@ -283,6 +359,7 @@ public class AccountController : Controller
         if (await _users.IsEmailConfirmedAsync(user))
         {
             ViewBag.Success = true;
+
             return View("EmailConfirmation");
         }
 
@@ -302,7 +379,9 @@ public class AccountController : Controller
         return View("EmailConfirmation");
     }
 
-    // ================= RESEND VERIFICATION EMAIL =================
+    // ==========================================
+    // RESEND VERIFICATION EMAIL
+    // ==========================================
 
     [AllowAnonymous]
     [HttpPost]
@@ -333,15 +412,18 @@ public class AccountController : Controller
             }
         }
 
-        // Generic response prevents account enumeration.
         TempData["EmailNotice"] =
-            "If this email belongs to an unverified account, a verification email will be sent if delivery is available. Please check your inbox and spam folder.";
+            "If this email belongs to an unverified account, " +
+            "a verification email will be sent if delivery " +
+            "is available. Please check your inbox and spam folder.";
 
         return RedirectToAction(
             nameof(RegisterConfirmation));
     }
 
-    // ================= FORGOT PASSWORD =================
+    // ==========================================
+    // FORGOT PASSWORD - GET
+    // ==========================================
 
     [AllowAnonymous]
     [HttpGet]
@@ -349,6 +431,10 @@ public class AccountController : Controller
     {
         return View(new ForgotPasswordViewModel());
     }
+
+    // ==========================================
+    // FORGOT PASSWORD - POST
+    // ==========================================
 
     [AllowAnonymous]
     [HttpPost]
@@ -358,9 +444,12 @@ public class AccountController : Controller
         ForgotPasswordViewModel model)
     {
         if (!ModelState.IsValid)
+        {
             return View(model);
+        }
 
-        var user = await _users.FindByEmailAsync(model.Email);
+        var user = await _users.FindByEmailAsync(
+            model.Email.Trim());
 
         if (user != null &&
             !string.IsNullOrWhiteSpace(user.Email))
@@ -395,7 +484,9 @@ public class AccountController : Controller
             nameof(ForgotPasswordConfirmation));
     }
 
-    // ================= FORGOT PASSWORD CONFIRMATION =================
+    // ==========================================
+    // FORGOT PASSWORD CONFIRMATION
+    // ==========================================
 
     [AllowAnonymous]
     [HttpGet]
@@ -404,7 +495,9 @@ public class AccountController : Controller
         return View("ForgotPasswordConfirm");
     }
 
-    // ================= RESET PASSWORD =================
+    // ==========================================
+    // RESET PASSWORD - GET
+    // ==========================================
 
     [AllowAnonymous]
     [HttpGet]
@@ -425,6 +518,10 @@ public class AccountController : Controller
         });
     }
 
+    // ==========================================
+    // RESET PASSWORD - POST
+    // ==========================================
+
     [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -433,9 +530,12 @@ public class AccountController : Controller
         ResetPasswordViewModel model)
     {
         if (!ModelState.IsValid)
+        {
             return View(model);
+        }
 
-        var user = await _users.FindByEmailAsync(model.Email);
+        var user = await _users.FindByEmailAsync(
+            model.Email);
 
         if (user == null)
         {
@@ -459,12 +559,15 @@ public class AccountController : Controller
 
         ModelState.AddModelError(
             "",
-            "Unable to reset password. Check the link and password.");
+            "Unable to reset password. " +
+            "Check the link and password.");
 
         return View(model);
     }
 
-    // ================= RESET PASSWORD CONFIRMATION =================
+    // ==========================================
+    // RESET PASSWORD CONFIRMATION
+    // ==========================================
 
     [AllowAnonymous]
     [HttpGet]
@@ -473,7 +576,9 @@ public class AccountController : Controller
         return View("ResetPasswordConfirm");
     }
 
-    // ================= ACCOUNT LINK HELPER =================
+    // ==========================================
+    // ACCOUNT LINK HELPER
+    // ==========================================
 
     private string BuildAccountLink(
         string action,
@@ -504,15 +609,19 @@ public class AccountController : Controller
             path.TrimStart('/')).ToString();
     }
 
-    // ================= ACCESS DENIED =================
+    // ==========================================
+    // ACCESS DENIED
+    // ==========================================
 
     [HttpGet]
     public IActionResult AccessDenied()
-    {
+    { 
         return View();
     }
 
-    // ================= LOGOUT =================
+    // ==========================================
+    // LOGOUT
+    // ==========================================
 
     [Authorize]
     [HttpPost]

@@ -5,26 +5,31 @@
 @{
     ViewData["Title"] = "Create Invoice";
     Layout = "_AdminLayout";
-
-    var contractOptions =
-        ViewBag.ContractOptions as IEnumerable<SelectListItem>
-        ?? Enumerable.Empty<SelectListItem>();
 }
 
 <div class="container-fluid py-4">
 
-    <!-- BACK BUTTON -->
     <div class="mb-4">
         <a asp-controller="Invoices"
            asp-action="Index"
-           class="text-decoration-none text-muted">
-            <i class="bi bi-arrow-left me-1"></i>
+           class="text-decoration-none">
+
+            <i class="bi bi-arrow-left me-2"></i>
             Back to Invoices
         </a>
     </div>
 
     <div class="card border-0 shadow-sm">
+
         <div class="card-body p-4">
+
+            <h4 class="fw-bold mb-2">
+                Create Invoice
+            </h4>
+
+            <p class="text-muted mb-4">
+                Generate a monthly rental invoice.
+            </p>
 
             <form asp-controller="Invoices"
                   asp-action="Create"
@@ -32,55 +37,86 @@
 
                 @Html.AntiForgeryToken()
 
-                <div asp-validation-summary="All"
+                <div asp-validation-summary="ModelOnly"
                      class="text-danger mb-3"></div>
 
                 <div class="row g-3">
 
-                    <!-- SEARCH CONTRACT -->
+                    <!-- RENTAL CONTRACT -->
                     <div class="col-12">
-                        <label for="contractSearch"
-                               class="form-label fw-semibold">
-                            Search Contract
-                        </label>
 
-                        <div class="input-group">
-                            <span class="input-group-text bg-white">
-                                <i class="bi bi-search"></i>
-                            </span>
-
-                            <input type="search"
-                                   id="contractSearch"
-                                   class="form-control"
-                                   placeholder="Search contract ID, room or tenant..."
-                                   autocomplete="off" />
-                        </div>
-                    </div>
-
-                    <!-- CONTRACT DROPDOWN -->
-                    <div class="col-12">
                         <label asp-for="ContractId"
                                class="form-label fw-semibold">
                             Rental Contract
                         </label>
 
                         <select asp-for="ContractId"
-                                asp-items="contractOptions"
-                                id="ContractId"
-                                class="form-select">
-                            <option value="0">-- Select Contract --</option>
-                        </select>
+                                asp-items="(IEnumerable<SelectListItem>)ViewBag.ContractOptions"
+                                class="form-select"
+                                id="ContractId">
 
-                        <div id="contractCount"
-                             class="form-text">
-                        </div>
+                            <option value="0">
+                                -- Select Active Contract --
+                            </option>
+
+                        </select>
 
                         <span asp-validation-for="ContractId"
                               class="text-danger small"></span>
+
+                    </div>
+
+                    <!-- CONTRACT INFORMATION -->
+                    <div class="col-12">
+
+                        <div id="contractInfo"
+                             class="contract-info-box d-none">
+
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <i class="bi bi-info-circle text-primary"></i>
+                                <strong>Contract Information</strong>
+                            </div>
+
+                            <div class="row g-3">
+
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block">
+                                        Start Date
+                                    </small>
+
+                                    <strong id="contractStart">
+                                        -
+                                    </strong>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block">
+                                        End Date
+                                    </small>
+
+                                    <strong id="contractEnd">
+                                        -
+                                    </strong>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block">
+                                        Monthly Rent
+                                    </small>
+
+                                    <strong id="contractRent">
+                                        -
+                                    </strong>
+                                </div>
+
+                            </div>
+
+                        </div>
                     </div>
 
                     <!-- INVOICE DATE -->
                     <div class="col-md-6">
+
                         <label asp-for="InvoiceDate"
                                class="form-label fw-semibold">
                             Invoice Date
@@ -88,14 +124,22 @@
 
                         <input asp-for="InvoiceDate"
                                type="date"
-                               class="form-control" />
+                               class="form-control invoice-date-input"
+                               id="InvoiceDate"
+                               required />
 
                         <span asp-validation-for="InvoiceDate"
                               class="text-danger small"></span>
+
+                        <div class="form-text">
+                            Must be within the contract period.
+                        </div>
+
                     </div>
 
                     <!-- DUE DATE -->
                     <div class="col-md-6">
+
                         <label asp-for="DueDate"
                                class="form-label fw-semibold">
                             Due Date
@@ -103,18 +147,31 @@
 
                         <input asp-for="DueDate"
                                type="date"
-                               class="form-control" />
+                               class="form-control invoice-date-input"
+                               id="DueDate"
+                               required />
 
                         <span asp-validation-for="DueDate"
                               class="text-danger small"></span>
+
+                        <div class="form-text">
+                            Automatically set to 7 days after invoice date.
+                        </div>
+
                     </div>
 
                 </div>
 
-                <hr class="my-4" />
+                <!-- INFO -->
+                <div class="alert alert-info mt-4 mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
 
-                <!-- ACTION BUTTONS -->
-                <div class="d-flex justify-content-end gap-2">
+                    The invoice amount will be calculated
+                    automatically from the contract's monthly rent.
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
 
                     <a asp-controller="Invoices"
                        asp-action="Index"
@@ -123,7 +180,9 @@
                     </a>
 
                     <button type="submit"
-                            class="btn btn-primary">
+                            class="btn btn-primary"
+                            id="createInvoiceButton">
+
                         <i class="bi bi-receipt me-2"></i>
                         Create Invoice
                     </button>
@@ -131,86 +190,253 @@
                 </div>
 
             </form>
+
         </div>
+
     </div>
 
 </div>
 
+<style>
+    .invoice-date-input {
+        cursor: pointer;
+        background: #fff;
+    }
+
+    .invoice-date-input:hover {
+        border-color: #86b7fe;
+    }
+
+    .contract-info-box {
+        background: #f4f8ff;
+        border: 1px solid #dce8ff;
+        border-radius: 12px;
+        padding: 20px;
+    }
+</style>
+
 @section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-
-            const searchInput =
-                document.getElementById("contractSearch");
 
             const contractSelect =
                 document.getElementById("ContractId");
 
-            const contractCount =
-                document.getElementById("contractCount");
+            const invoiceDate =
+                document.getElementById("InvoiceDate");
 
-            if (!searchInput || !contractSelect) {
-                return;
+            const dueDate =
+                document.getElementById("DueDate");
+
+            const infoBox =
+                document.getElementById("contractInfo");
+
+            const startLabel =
+                document.getElementById("contractStart");
+
+            const endLabel =
+                document.getElementById("contractEnd");
+
+            const rentLabel =
+                document.getElementById("contractRent");
+
+            const submitButton =
+                document.getElementById("createInvoiceButton");
+
+            const periodUrl =
+                '@Url.Action("ContractPeriod", "Invoices")';
+
+            let currentRequest = null;
+
+            function todayISO() {
+                const d = new Date();
+
+                return [
+                    d.getFullYear(),
+                    String(d.getMonth() + 1).padStart(2, "0"),
+                    String(d.getDate()).padStart(2, "0")
+                ].join("-");
             }
 
-            // Store all contract options from the server.
-            const allOptions = Array.from(contractSelect.options)
-                .filter(option => option.value !== "0" &&
-                                  option.value !== "")
-                .map(option => ({
-                    value: option.value,
-                    text: option.text
-                }));
+            function addDays(isoDate, days) {
+                const date = new Date(isoDate + "T12:00:00");
 
-            function filterContracts() {
+                date.setDate(date.getDate() + days);
 
-                const keyword =
-                    searchInput.value.trim().toLowerCase();
+                return [
+                    date.getFullYear(),
+                    String(date.getMonth() + 1).padStart(2, "0"),
+                    String(date.getDate()).padStart(2, "0")
+                ].join("-");
+            }
 
-                const selectedValue = contractSelect.value;
+            function formatDate(isoDate) {
+                if (!isoDate) return "-";
 
-                // Search by option text or contract ID.
-                const filtered = allOptions.filter(option =>
-                    option.text.toLowerCase().includes(keyword) ||
-                    option.value.includes(keyword)
+                const parts = isoDate.split("-");
+
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+
+            function updateDueDate() {
+                if (!invoiceDate.value) return;
+
+                dueDate.min = invoiceDate.value;
+
+                dueDate.value = addDays(
+                    invoiceDate.value,
+                    7
                 );
+            }
 
-                // Remove existing options.
-                contractSelect.replaceChildren();
+            function resetContractInfo() {
+                infoBox.classList.add("d-none");
 
-                // Add placeholder.
-                contractSelect.add(
-                    new Option("-- Select Contract --", "0")
-                );
+                invoiceDate.removeAttribute("min");
+                invoiceDate.removeAttribute("max");
 
-                // Add matching contracts.
-                filtered.forEach(option => {
-                    contractSelect.add(
-                        new Option(option.text, option.value)
+                startLabel.textContent = "-";
+                endLabel.textContent = "-";
+                rentLabel.textContent = "-";
+            }
+
+            async function loadContractPeriod(resetDates) {
+                const contractId = contractSelect.value;
+
+                if (currentRequest) {
+                    currentRequest.abort();
+                }
+
+                resetContractInfo();
+
+                if (!contractId || contractId === "0") {
+                    submitButton.disabled = true;
+                    return;
+                }
+
+                const controller = new AbortController();
+                currentRequest = controller;
+
+                submitButton.disabled = true;
+
+                try {
+                    const response = await fetch(
+                        periodUrl + "?id=" +
+                        encodeURIComponent(contractId),
+                        {
+                            signal: controller.signal,
+                            headers: {
+                                "Accept": "application/json"
+                            }
+                        }
                     );
+
+                    if (!response.ok) {
+                        throw new Error(
+                            "Unable to load contract information."
+                        );
+                    }
+
+                    const data = await response.json();
+
+                    if (currentRequest !== controller) return;
+
+                    const start = data.startDate;
+                    const end = data.endDate;
+
+                    // Limit the invoice date to the contract period.
+                    invoiceDate.min = start;
+                    invoiceDate.max = end;
+
+                    const today = todayISO();
+
+                    // For new selections, choose today if possible.
+                    // Otherwise use the nearest valid date.
+                    if (resetDates || !invoiceDate.value ||
+                        invoiceDate.value < start ||
+                        invoiceDate.value > end) {
+
+                        if (today < start) {
+                            invoiceDate.value = start;
+                        }
+                        else if (today > end) {
+                            invoiceDate.value = end;
+                        }
+                        else {
+                            invoiceDate.value = today;
+                        }
+                    }
+
+                    // Set or correct the due date.
+                    if (resetDates ||
+                        !dueDate.value ||
+                        dueDate.value < invoiceDate.value) {
+                        updateDueDate();
+                    }
+                    else {
+                        dueDate.min = invoiceDate.value;
+                    }
+
+                    startLabel.textContent = formatDate(start);
+                    endLabel.textContent = formatDate(end);
+
+                    rentLabel.textContent =
+                        new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: "USD"
+                        }).format(data.monthlyRent);
+
+                    infoBox.classList.remove("d-none");
+
+                    submitButton.disabled = false;
+                }
+                catch (error) {
+                    if (error.name !== "AbortError") {
+                        console.error(error);
+                        submitButton.disabled = true;
+                        resetContractInfo();
+                    }
+                }
+                finally {
+                    if (currentRequest === controller) {
+                        currentRequest = null;
+                    }
+                }
+            }
+
+            // Load range when contract changes.
+            contractSelect.addEventListener("change", function () {
+                loadContractPeriod(true);
+            });
+
+            // Update due date after changing invoice date.
+            invoiceDate.addEventListener("change", function () {
+                updateDueDate();
+            });
+
+            // Make the entire date input clickable.
+            document.querySelectorAll(".invoice-date-input")
+                .forEach(function (input) {
+
+                    input.addEventListener("click", function () {
+
+                        if (typeof input.showPicker === "function") {
+                            try {
+                                input.showPicker();
+                            }
+                            catch {
+                                // Fall back to native input behavior.
+                            }
+                        }
+
+                    });
                 });
 
-                // Keep the selected contract if it still matches.
-                if (filtered.some(option =>
-                    option.value === selectedValue)) {
-
-                    contractSelect.value = selectedValue;
-                }
-                else {
-                    contractSelect.value = "0";
-                }
-
-                // Show how many contracts match.
-                contractCount.textContent =
-                    filtered.length + " contract(s) found";
-            }
-
-            searchInput.addEventListener(
-                "input",
-                filterContracts
-            );
-
-            filterContracts();
+            // Restore contract information after validation errors.
+            loadContractPeriod(false);
         });
     </script>
 }

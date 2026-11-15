@@ -1,4 +1,7 @@
 
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using ihouse.Data;
 using ihouse.Models;
 using ihouse.Models.Enums;
@@ -42,46 +45,74 @@ public class ContractsController : Controller
     // ==========================================
     // SEARCH TENANTS
     // GET: /Contracts/SearchTenants?term=...
+    //
+    // Search by:
+    // - Tenant ID
+    // - Full Name
+    // - Identity Number (CCCD)
+    // - Phone Number
     // ==========================================
 
     [HttpGet]
     public async Task<IActionResult> SearchTenants(string? term)
     {
-        term = term?.Trim() ?? "";
+        term = term?.Trim() ?? string.Empty;
 
+        // Validate search input
         if (string.IsNullOrWhiteSpace(term) ||
             term.Length > 100)
         {
             return Json(Array.Empty<object>());
         }
 
+        // Check whether the input is a valid Tenant ID
         bool isNumber = int.TryParse(
             term,
             out int tenantId
         );
 
+        // Require at least 2 characters for text searches
         if (term.Length < 2 && !isNumber)
         {
             return Json(Array.Empty<object>());
         }
 
-        string pattern =
-            $"%{EscapeLikePattern(term)}%";
+        // Escape special SQL LIKE characters
+        string pattern = $"%{EscapeLikePattern(term)}%";
 
         var tenants = await _context.Tenants
             .AsNoTracking()
             .Where(t =>
-                (isNumber && t.Id == tenantId) ||
+
+                // Search by Tenant ID
+                (isNumber && t.Id == tenantId)
+
+                ||
+
+                // Search by Full Name
                 EF.Functions.ILike(
                     t.FullName,
                     pattern,
                     "\\"
-                ) ||
-                (t.Phone != null &&
-                 EF.Functions.ILike(
-                    t.Phone,
+                )
+
+                ||
+
+                // Search by Identity Number / CCCD
+                EF.Functions.ILike(
+                    t.IdentityNumber,
                     pattern,
                     "\\"
+                )
+
+                ||
+
+                // Search by Phone Number
+                (t.Phone != null &&
+                 EF.Functions.ILike(
+                     t.Phone,
+                     pattern,
+                     "\\"
                  ))
             )
             .OrderBy(t => t.FullName)
@@ -97,6 +128,10 @@ public class ContractsController : Controller
         return Json(tenants);
     }
 
+    // ==========================================
+    // ESCAPE SQL LIKE PATTERN
+    // ==========================================
+
     private static string EscapeLikePattern(string value)
     {
         return value
@@ -107,6 +142,7 @@ public class ContractsController : Controller
 
     // ==========================================
     // CREATE - GET
+    // GET: /Contracts/Create
     // ==========================================
 
     [HttpGet]
@@ -124,6 +160,7 @@ public class ContractsController : Controller
 
     // ==========================================
     // CREATE - POST
+    // POST: /Contracts/Create
     // ==========================================
 
     [HttpPost]
@@ -133,7 +170,7 @@ public class ContractsController : Controller
     {
         bool isAdmin = User.IsInRole("Admin");
 
-        // Staff can only create Pending contracts.
+        // Staff can only create Pending contracts
         if (!isAdmin &&
             model.Status != ContractStatus.Pending)
         {
@@ -143,7 +180,7 @@ public class ContractsController : Controller
             );
         }
 
-        // New contracts cannot be Terminated.
+        // New contracts cannot be Terminated
         if (model.Status == ContractStatus.Terminated)
         {
             ModelState.AddModelError(
@@ -157,8 +194,13 @@ public class ContractsController : Controller
         if (!ModelState.IsValid)
         {
             await LoadOptions(model.PrimaryTenantId);
+
             return View(model);
         }
+
+        // ======================================
+        // CREATE CONTRACT ENTITY
+        // ======================================
 
         var contract = new Contract
         {
@@ -179,6 +221,10 @@ public class ContractsController : Controller
             Status = model.Status
         };
 
+        // ======================================
+        // ASSIGN PRIMARY TENANT
+        // ======================================
+
         contract.ContractTenants.Add(
             new ContractTenant
             {
@@ -186,6 +232,10 @@ public class ContractsController : Controller
                 IsPrimaryTenant = true
             }
         );
+
+        // ======================================
+        // SAVE CONTRACT
+        // ======================================
 
         _context.Contracts.Add(contract);
 
@@ -199,6 +249,7 @@ public class ContractsController : Controller
 
     // ==========================================
     // EDIT - GET
+    // GET: /Contracts/Edit/5
     // ==========================================
 
     [HttpGet]
@@ -210,9 +261,11 @@ public class ContractsController : Controller
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (contract == null)
+        {
             return NotFound();
+        }
 
-        // Terminated contracts cannot be edited.
+        // Terminated contracts cannot be edited
         if (contract.Status == ContractStatus.Terminated)
         {
             TempData["Error"] =
@@ -221,12 +274,16 @@ public class ContractsController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Staff cannot edit Active contracts.
+        // Staff cannot edit Active contracts
         if (!User.IsInRole("Admin") &&
             contract.Status != ContractStatus.Pending)
         {
             return Forbid();
         }
+
+        // ======================================
+        // MAP CONTRACT TO VIEWMODEL
+        // ======================================
 
         var model = new ContractFormViewModel
         {
@@ -259,6 +316,7 @@ public class ContractsController : Controller
 
     // ==========================================
     // EDIT - POST
+    // POST: /Contracts/Edit/5
     // ==========================================
 
     [HttpPost]
@@ -272,11 +330,16 @@ public class ContractsController : Controller
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (contract == null)
+        {
             return NotFound();
+        }
 
         bool isAdmin = User.IsInRole("Admin");
 
-        // Terminated contracts cannot be edited.
+        // ======================================
+        // VALIDATE CONTRACT STATUS
+        // ======================================
+
         if (contract.Status == ContractStatus.Terminated)
         {
             TempData["Error"] =
@@ -285,7 +348,7 @@ public class ContractsController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Staff may only edit Pending contracts.
+        // Staff may only edit Pending contracts
         if (!isAdmin)
         {
             if (contract.Status != ContractStatus.Pending)
@@ -302,7 +365,7 @@ public class ContractsController : Controller
             }
         }
 
-        // Termination must use the Terminate action.
+        // Termination must use the Terminate action
         if (model.Status == ContractStatus.Terminated)
         {
             ModelState.AddModelError(
@@ -311,7 +374,7 @@ public class ContractsController : Controller
             );
         }
 
-        // Do not change an Active contract back to Pending.
+        // Active contracts cannot return to Pending
         if (contract.Status == ContractStatus.Active &&
             model.Status != ContractStatus.Active)
         {
@@ -321,11 +384,16 @@ public class ContractsController : Controller
             );
         }
 
+        // ======================================
+        // VALIDATE FORM DATA
+        // ======================================
+
         await ValidateContract(model, id);
 
         if (!ModelState.IsValid)
         {
             await LoadOptions(model.PrimaryTenantId);
+
             return View(model);
         }
 
@@ -365,7 +433,7 @@ public class ContractsController : Controller
         }
 
         // ======================================
-        // UPDATE CONTRACT
+        // UPDATE CONTRACT INFORMATION
         // ======================================
 
         contract.RoomId = model.RoomId;
@@ -385,6 +453,10 @@ public class ContractsController : Controller
             model.PaymentMethod;
 
         contract.Status = model.Status;
+
+        // ======================================
+        // SAVE CHANGES
+        // ======================================
 
         await _context.SaveChangesAsync();
 
@@ -410,7 +482,9 @@ public class ContractsController : Controller
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (contract == null)
+        {
             return NotFound();
+        }
 
         return View(contract);
     }
@@ -429,7 +503,9 @@ public class ContractsController : Controller
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (contract == null)
+        {
             return NotFound();
+        }
 
         if (contract.Status == ContractStatus.Terminated)
         {
@@ -456,6 +532,10 @@ public class ContractsController : Controller
     private async Task LoadOptions(
         int? selectedTenantId = null)
     {
+        // ======================================
+        // LOAD ROOMS
+        // ======================================
+
         var rooms = await _context.Rooms
             .AsNoTracking()
             .OrderBy(r => r.RoomNumber)
@@ -467,6 +547,10 @@ public class ContractsController : Controller
             "RoomNumber"
         );
 
+        // ======================================
+        // LOAD SELECTED TENANT
+        // ======================================
+
         ViewBag.SelectedTenantName = "";
 
         if (selectedTenantId.HasValue &&
@@ -474,7 +558,8 @@ public class ContractsController : Controller
         {
             var tenant = await _context.Tenants
                 .AsNoTracking()
-                .Where(t => t.Id == selectedTenantId.Value)
+                .Where(t =>
+                    t.Id == selectedTenantId.Value)
                 .Select(t => new
                 {
                     t.Id,
@@ -498,7 +583,10 @@ public class ContractsController : Controller
         ContractFormViewModel model,
         int? currentId = null)
     {
-        // Validate dates.
+        // ======================================
+        // VALIDATE CONTRACT DATES
+        // ======================================
+
         if (model.ContractEndDate <= model.ContractStartDate)
         {
             ModelState.AddModelError(
@@ -507,10 +595,14 @@ public class ContractsController : Controller
             );
         }
 
-        // Validate room.
+        // ======================================
+        // VALIDATE ROOM
+        // ======================================
+
         var room = await _context.Rooms
             .AsNoTracking()
-            .FirstOrDefaultAsync(r => r.Id == model.RoomId);
+            .FirstOrDefaultAsync(r =>
+                r.Id == model.RoomId);
 
         if (room == null)
         {
@@ -529,9 +621,13 @@ public class ContractsController : Controller
             );
         }
 
-        // Validate tenant.
+        // ======================================
+        // VALIDATE PRIMARY TENANT
+        // ======================================
+
         bool tenantExists = await _context.Tenants
-            .AnyAsync(t => t.Id == model.PrimaryTenantId);
+            .AnyAsync(t =>
+                t.Id == model.PrimaryTenantId);
 
         if (!tenantExists)
         {
@@ -541,7 +637,10 @@ public class ContractsController : Controller
             );
         }
 
-        // Validate overlapping active contracts.
+        // ======================================
+        // VALIDATE OVERLAPPING CONTRACTS
+        // ======================================
+
         if (model.Status == ContractStatus.Active)
         {
             bool overlaps = await _context.Contracts
