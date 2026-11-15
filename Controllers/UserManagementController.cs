@@ -13,6 +13,7 @@ public class UserManagementController : Controller
 {
 	private readonly UserManager<ApplicationUser> _userManager;
 	private readonly RoleManager<IdentityRole> _roleManager;
+	private readonly ILogger<UserManagementController> _logger;
 
 	private static readonly string[] AllowedRoles =
 	{
@@ -23,10 +24,12 @@ public class UserManagementController : Controller
 
 	public UserManagementController(
 		UserManager<ApplicationUser> userManager,
-		RoleManager<IdentityRole> roleManager)
+		RoleManager<IdentityRole> roleManager,
+		ILogger<UserManagementController> logger)
 	{
 		_userManager = userManager;
 		_roleManager = roleManager;
+		_logger = logger;
 	}
 
 	// GET: /UserManagement
@@ -171,7 +174,7 @@ public class UserManagementController : Controller
 		if (oldRole != null && !AllowedRoles.Contains(oldRole))
 		{
 			TempData["Error"] =
-				"This account has an unsupported role.";
+				"This account cannot be updated right now. Please try again later.";
 
 			return RedirectToAction(nameof(Index));
 		}
@@ -198,7 +201,7 @@ public class UserManagementController : Controller
 		if (!await _roleManager.RoleExistsAsync(model.NewRole))
 		{
 			TempData["Error"] =
-				"Selected role does not exist in the database.";
+				"This role is currently unavailable. Please choose another role.";
 
 			return RedirectToAction(nameof(Index));
 		}
@@ -230,9 +233,10 @@ public class UserManagementController : Controller
 					targetUser,
 					model.NewRole);
 
+				_logger.LogError("Role removal failed for {UserId}. Rollback succeeded: {Rollback}", targetUser.Id, rollback.Succeeded);
 				TempData["Error"] = rollback.Succeeded
-					? "Role update failed. Previous role was preserved."
-					: "Role update failed. Please review this account's roles.";
+					? "We couldn't change the role. Please try again."
+					: "We couldn't finish changing the role. Please check the account before trying again.";
 
 				return RedirectToAction(nameof(Index));
 			}
@@ -242,10 +246,13 @@ public class UserManagementController : Controller
 		var stampResult =
 			await _userManager.UpdateSecurityStampAsync(targetUser);
 
+		if (!stampResult.Succeeded)
+			_logger.LogError("Security stamp update failed for {UserId}: {Errors}", targetUser.Id, stampResult.Errors);
+
 		TempData[stampResult.Succeeded ? "Success" : "Error"] =
 			stampResult.Succeeded
 				? "User role updated successfully."
-				: "Role updated, but session invalidation needs review.";
+				: "The role was changed, but we couldn't finish securing the account. Please try again later.";
 
 		return RedirectToAction(nameof(Index));
 	}

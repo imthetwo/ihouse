@@ -7,13 +7,13 @@
 		<UserSecretsId>1d85f5b3-27e3-498a-bfef-4acf5c12afe6</UserSecretsId>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<Content Remove="Views\Shared\Error.cshtml" />
-	</ItemGroup>
+
 
 	<ItemGroup>
-		<None Include="Views\Shared\Error.cshtml" />
-	</ItemGroup>
+        <Compile Remove="Tests/**/*.cs" />
+        <Content Remove="Tests/**" />
+        <None Remove="Tests/**" />
+    </ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="MailKit" Version="4.18.2" />

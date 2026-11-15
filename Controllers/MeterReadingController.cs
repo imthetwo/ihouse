@@ -53,6 +53,7 @@ public class MeterReadingController : Controller
     public async Task<IActionResult> Create(
         MeterReadingFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Meters);
         await ValidateReadingAsync(model);
 
         if (!ModelState.IsValid)
@@ -74,6 +75,7 @@ public class MeterReadingController : Controller
         try
         {
             await _context.SaveChangesAsync();
+            await write.CommitAsync();
 
             TempData["Success"] =
                 "Meter reading created successfully.";
@@ -127,6 +129,7 @@ public class MeterReadingController : Controller
         int id,
         MeterReadingFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Meters);
         var reading = await _context.MeterReadings
             .FirstOrDefaultAsync(r => r.Id == id);
 
@@ -149,6 +152,7 @@ public class MeterReadingController : Controller
         try
         {
             await _context.SaveChangesAsync();
+            await write.CommitAsync();
 
             TempData["Success"] =
                 "Meter reading updated successfully.";
@@ -175,6 +179,7 @@ public class MeterReadingController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Meters);
         var reading = await _context.MeterReadings
             .FirstOrDefaultAsync(r => r.Id == id);
 
@@ -186,6 +191,7 @@ public class MeterReadingController : Controller
         try
         {
             await _context.SaveChangesAsync();
+            await write.CommitAsync();
 
             TempData["Success"] =
                 "Meter reading deleted successfully.";

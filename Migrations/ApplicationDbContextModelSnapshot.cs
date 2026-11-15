@@ -319,6 +319,11 @@ namespace ihouse.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("BillingMonth")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("integer")
+                        .HasComputedColumnSql("EXTRACT(YEAR FROM \"InvoiceDate\")::integer * 100 + EXTRACT(MONTH FROM \"InvoiceDate\")::integer", true);
+
                     b.Property<int>("ContractId")
                         .HasColumnType("integer");
 
@@ -337,7 +342,8 @@ namespace ihouse.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ContractId");
+                    b.HasIndex("ContractId", "BillingMonth")
+                        .IsUnique();
 
                     b.ToTable("Invoices");
                 });
@@ -421,6 +427,9 @@ namespace ihouse.Migrations
                     b.Property<int>("ApprovalStatus")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("BilledInvoiceId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -441,6 +450,8 @@ namespace ihouse.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BilledInvoiceId");
 
                     b.HasIndex("RoomId");
 
@@ -471,7 +482,8 @@ namespace ihouse.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RoomId");
+                    b.HasIndex("RoomId", "ReadingDay")
+                        .IsUnique();
 
                     b.ToTable("MeterReadings");
                 });
@@ -503,6 +515,10 @@ namespace ihouse.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("InvoiceId");
+
+                    b.HasIndex("TransactionCode")
+                        .IsUnique()
+                        .HasFilter("\"TransactionCode\" IS NOT NULL");
 
                     b.ToTable("Payments");
                 });
@@ -552,7 +568,9 @@ namespace ihouse.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InvoiceId");
+                    b.HasIndex("InvoiceId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 0");
 
                     b.HasIndex("OrderId")
                         .IsUnique();
@@ -600,6 +618,9 @@ namespace ihouse.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RoomNumber")
+                        .IsUnique();
 
                     b.ToTable("Rooms");
                 });
@@ -688,6 +709,9 @@ namespace ihouse.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ApplicationUserId")
+                        .IsUnique();
+
+                    b.HasIndex("IdentityNumber")
                         .IsUnique();
 
                     b.ToTable("Tenants");
@@ -859,6 +883,11 @@ namespace ihouse.Migrations
 
             modelBuilder.Entity("ihouse.Models.MaintenanceRequest", b =>
                 {
+                    b.HasOne("ihouse.Models.Invoice", "BilledInvoice")
+                        .WithMany()
+                        .HasForeignKey("BilledInvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ihouse.Models.Room", "Room")
                         .WithMany("MaintenanceRequests")
                         .HasForeignKey("RoomId")
@@ -870,6 +899,8 @@ namespace ihouse.Migrations
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("BilledInvoice");
 
                     b.Navigation("Room");
 

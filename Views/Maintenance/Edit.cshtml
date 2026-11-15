@@ -93,8 +93,9 @@
                         </label>
 
                         <select asp-for="Status"
-                                asp-items="Html.GetEnumSelectList<MaintenanceRqStatus>()"
+
                                 class="form-select">
+                            <option value="Pending">Pending</option>
                         </select>
 
                         <span asp-validation-for="Status"

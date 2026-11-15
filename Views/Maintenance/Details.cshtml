@@ -48,6 +48,23 @@
         }
     </div>
 
+    @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+    @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+    <p>Tenant approval: <strong>@Model.ApprovalStatus</strong></p>
+    @if (Model.Status == MaintenanceRqStatus.Pending)
+    {
+        <a class="btn btn-outline-primary mb-3" asp-action="Edit" asp-route-id="@Model.Id">Edit request</a>
+        <form asp-action="AddCost" asp-route-id="@Model.Id" method="post" class="card card-body mb-3">
+            <h5>Add cost / revise quotation</h5>
+            <label for="costDescription">Description</label>
+            <input id="costDescription" name="Description" maxlength="500" required class="form-control mb-2" />
+            <label for="costAmount">Amount (USD)</label>
+            <input id="costAmount" name="Amount" type="number" min="0.01" max="1000000" step="0.01" required class="form-control mb-2" />
+            <label><input name="ChargeToTenant" type="checkbox" value="true" /> Charge to tenant</label>
+            <p class="text-muted">Changing costs resets tenant approval. Remove an old cost before replacing it.</p>
+            <button class="btn btn-primary" type="submit">Add cost</button>
+        </form>
+    }
     <div class="row g-3 mb-4">
 
         <div class="col-md-6">
@@ -130,6 +147,13 @@
                                 <td>@cost.Amount.ToString("C2", usd)</td>
                                 <td>
                                     @(cost.ChargeToTenant ? "Yes" : "No")
+                                    @if (Model.Status == MaintenanceRqStatus.Pending)
+                                    {
+                                        <form asp-action="RemoveCost" asp-route-id="@Model.Id" method="post">
+                                            <input type="hidden" name="costId" value="@cost.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                        </form>
+                                    }
                                 </td>
                             </tr>
                         }

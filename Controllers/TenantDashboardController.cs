@@ -75,7 +75,9 @@ public class TenantDashboardController : Controller
             .ToList();
 
         var currentContract = contracts
-            .Where(c => c.Status.ToString() == "Active")
+            .Where(c => c.Status == ContractStatus.Active &&
+                c.ContractStartDate <= DateOnly.FromDateTime(DateTime.Today) &&
+                c.ContractEndDate >= DateOnly.FromDateTime(DateTime.Today))
             .OrderByDescending(c => c.ContractStartDate)
             .FirstOrDefault();
 
@@ -556,7 +558,9 @@ public class TenantDashboardController : Controller
 
         var activeContract = activeLinks
             .Select(ct => ct.Contract)
-            .Where(c => c.Status.ToString() == "Active")
+            .Where(c => c.Status == ContractStatus.Active &&
+                c.ContractStartDate <= DateOnly.FromDateTime(DateTime.Today) &&
+                c.ContractEndDate >= DateOnly.FromDateTime(DateTime.Today))
             .OrderByDescending(c => c.ContractStartDate)
             .FirstOrDefault();
 
@@ -619,6 +623,7 @@ public class TenantDashboardController : Controller
         int id,
         bool approve)
     {
+        await using var write = await _db.BeginWriteAsync(WriteTransaction.Maintenance);
         var tenant = await GetCurrentTenantAsync();
 
         if (tenant == null)
@@ -669,6 +674,7 @@ public class TenantDashboardController : Controller
         request.ApprovalDecidedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+        await write.CommitAsync();
 
         TempData["Success"] = approve
             ? "Quotation approved. Staff can now arrange the repair."

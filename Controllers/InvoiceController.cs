@@ -2,6 +2,7 @@
 using System.Data;
 using ihouse.Data;
 using ihouse.Models;
+using ihouse.Services;
 using ihouse.Models.Enums;
 using ihouse.ViewModels.Invoice;
 using Microsoft.AspNetCore.Authorization;
@@ -107,6 +108,11 @@ public class InvoicesController : Controller
     public async Task<IActionResult> Create(
         InvoiceFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Invoices);
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(73421, {WriteTransaction.Meters})");
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(73421, {WriteTransaction.Maintenance})");
         if (model.ContractId <= 0)
         {
             ModelState.AddModelError(
@@ -211,9 +217,17 @@ public class InvoicesController : Controller
             }
         };
 
+        var billingError = await InvoiceCalculator.AddServicesAsync(_context, contract, invoice);
+        if (billingError != null)
+        {
+            ModelState.AddModelError("", billingError);
+            await LoadContractsAsync();
+            return View(model);
+        }
         _context.Invoices.Add(invoice);
 
         await _context.SaveChangesAsync();
+        await write.CommitAsync();
 
         TempData["Success"] =
             $"Invoice #{invoice.Id} created successfully.";
@@ -277,8 +291,7 @@ public class InvoicesController : Controller
         if (rentItems.Count != 1)
         {
             TempData["Error"] =
-                "This invoice does not contain exactly " +
-                "one rent item. Manual review is required.";
+                "This invoice cannot be edited right now. Please try again later.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -343,8 +356,7 @@ public class InvoicesController : Controller
         try
         {
             await using var transaction =
-                await _context.Database.BeginTransactionAsync(
-                    IsolationLevel.Serializable);
+                await _context.BeginWriteAsync(WriteTransaction.Invoices);
 
             var invoice = await _context.Invoices
                 .Include(i => i.InvoiceItems)
@@ -418,8 +430,7 @@ public class InvoicesController : Controller
             {
                 ModelState.AddModelError(
                     "",
-                    "Invoice must contain exactly " +
-                    "one rent item.");
+                    "This invoice cannot be updated right now. Please try again later.");
             }
 
             if (!ModelState.IsValid)
@@ -428,6 +439,13 @@ public class InvoicesController : Controller
                 return View(model);
             }
 
+            if (invoice.InvoiceItems.Any(i => i.ItemType != InvoiceItemType.Rent) &&
+                (invoice.InvoiceDate.Year != model.InvoiceDate.Year || invoice.InvoiceDate.Month != model.InvoiceDate.Month))
+            {
+                ModelState.AddModelError("", "An invoice with service charges must stay in its original month.");
+                model.ContractId = invoice.ContractId;
+                return View(model);
+            }
             var rentItem = rentItems[0];
 
             rentItem.Quantity = 1;
@@ -461,8 +479,7 @@ public class InvoicesController : Controller
 
             ModelState.AddModelError(
                 "",
-                "Unable to update invoice due to " +
-                "a database conflict.");
+                "We couldn't update the invoice. Please try again.");
 
             return View(model);
         }
@@ -513,8 +530,7 @@ public class InvoicesController : Controller
         try
         {
             await using var transaction =
-                await _context.Database.BeginTransactionAsync(
-                    IsolationLevel.Serializable);
+                await _context.BeginWriteAsync(WriteTransaction.Invoices);
 
             var invoice = await _context.Invoices
                 .Include(i => i.InvoiceItems)
@@ -533,6 +549,9 @@ public class InvoicesController : Controller
 
                 return RedirectToAction(nameof(Index));
             }
+
+            await _context.MaintenanceRequests.Where(r => r.BilledInvoiceId == id)
+                .ExecuteUpdateAsync(s => s.SetProperty(r => r.BilledInvoiceId, (int?)null));
 
             // Remove invoice items before the invoice.
             _context.InvoiceItems.RemoveRange(
@@ -556,8 +575,7 @@ public class InvoicesController : Controller
                 id);
 
             TempData["Error"] =
-                "Invoice could not be deleted. " +
-                "It may be referenced by other records.";
+                "This invoice cannot be deleted right now. Please try again later.";
 
             return RedirectToAction(nameof(Index));
         }

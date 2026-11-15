@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using ihouse.Data;
 using ihouse.Models;
 using ihouse.Models.Enums;
@@ -40,7 +40,7 @@ public class PayPalController : Controller
 
         if (transaction.Status == PaymentTransactionStatus.Success)
         {
-            TempData["Success"] = "Payment successful!";
+            TempData["Success"] = "Payment completed successfully.";
 
             return RedirectToAction(
                 "Index",
@@ -50,7 +50,7 @@ public class PayPalController : Controller
         if (transaction.Status != PaymentTransactionStatus.Pending)
         {
             TempData["Error"] =
-                "We couldn't continue your payment. Please contact support.";
+                "We couldn't continue your payment. Please contact your property manager.";
 
             return BackToCheckout(transaction.InvoiceId);
         }
@@ -66,6 +66,7 @@ public class PayPalController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Capture(string orderId)
     {
+        await using var write = await _db.BeginWriteAsync(WriteTransaction.Invoices);
         var transaction = await GetOwnTransactionAsync(orderId);
 
         if (transaction == null)
@@ -73,7 +74,7 @@ public class PayPalController : Controller
 
         if (transaction.Status == PaymentTransactionStatus.Success)
         {
-            TempData["Success"] = "Payment successful!";
+            TempData["Success"] = "Payment completed successfully.";
 
             return RedirectToAction(
                 "Index",
@@ -83,7 +84,7 @@ public class PayPalController : Controller
         if (transaction.Status != PaymentTransactionStatus.Pending)
         {
             TempData["Error"] =
-                "We couldn't verify your payment. Please contact support.";
+                "We couldn't verify your payment. Please contact your property manager.";
 
             return BackToCheckout(transaction.InvoiceId);
         }
@@ -102,7 +103,7 @@ public class PayPalController : Controller
                     transaction.InvoiceId);
 
                 TempData["Error"] =
-                    "We couldn't verify your payment. Please contact support.";
+                    "We couldn't verify your payment. Please contact your property manager.";
 
                 return BackToCheckout(transaction.InvoiceId);
             }
@@ -133,7 +134,7 @@ public class PayPalController : Controller
                     orderId);
 
                 TempData["Error"] =
-                    "We couldn't verify your payment. Please contact support.";
+                    "We couldn't verify your payment. Please contact your property manager.";
 
                 return BackToCheckout(transaction.InvoiceId);
             }
@@ -151,15 +152,14 @@ public class PayPalController : Controller
                 {
                     failedTransaction.Status = PaymentTransactionStatus.Failed;
                     await _db.SaveChangesAsync();
+                    await write.CommitAsync();
                 }
 
                 TempData["Error"] = "Payment failed. Please try again.";
                 return BackToCheckout(transaction.InvoiceId);
             }
 
-            if (order.Status != "COMPLETED" ||
-                string.IsNullOrWhiteSpace(order.CaptureId) ||
-                !order.CapturedAmount.HasValue)
+            if (!order.IsCaptured)
             {
                 _logger.LogWarning(
                     "PayPal capture not confirmed. Order={OrderId}, Status={Status}",
@@ -167,12 +167,12 @@ public class PayPalController : Controller
                     order.Status);
 
                 TempData["Error"] =
-                    "We're checking your payment. Please don't pay again.";
+                    "Your payment could not be confirmed. Check its status before paying again.";
 
                 return BackToCheckout(transaction.InvoiceId);
             }
 
-            if (order.CapturedAmount.Value != transaction.AmountUSD)
+            if (order.CapturedAmount!.Value != transaction.AmountUSD)
             {
                 _logger.LogError(
                     "PayPal amount mismatch. Order={OrderId}, Expected={Expected}, Actual={Actual}",
@@ -181,7 +181,7 @@ public class PayPalController : Controller
                     order.CapturedAmount.Value);
 
                 TempData["Error"] =
-                    "Your payment needs review. Please contact support.";
+                    "Your payment needs review. Please contact your property manager.";
 
                 return BackToCheckout(transaction.InvoiceId);
             }
@@ -194,7 +194,7 @@ public class PayPalController : Controller
                 orderId);
 
             TempData["Error"] =
-                "We're checking your payment. Please don't pay again.";
+                "Your payment could not be confirmed. Check its status before paying again.";
 
             return BackToCheckout(transaction.InvoiceId);
         }
@@ -204,111 +204,95 @@ public class PayPalController : Controller
             string captureId = order.CaptureId!;
             decimal amount = order.CapturedAmount!.Value;
 
-            // Compatible with EnableRetryOnFailure in Program.cs.
-            var strategy = _db.Database.CreateExecutionStrategy();
+            var current = await _db.PaymentTransactions
+                .FirstOrDefaultAsync(t =>
+                    t.Id == transaction.Id &&
+                    t.OrderId == orderId &&
+                    t.PaymentMethod == PaymentMethod.PayPal);
 
-            await strategy.ExecuteAsync(async () =>
+            if (current == null)
             {
-                await using var dbTransaction =
-                    await _db.Database.BeginTransactionAsync(
-                        IsolationLevel.Serializable);
+                throw new InvalidOperationException(
+                    "Payment transaction not found.");
+            }
 
-                var current = await _db.PaymentTransactions
-                    .FirstOrDefaultAsync(t =>
-                        t.Id == transaction.Id &&
-                        t.OrderId == orderId &&
-                        t.PaymentMethod == PaymentMethod.PayPal);
+            if (current.Status != PaymentTransactionStatus.Pending &&
+                current.Status != PaymentTransactionStatus.Success)
+            {
+                throw new InvalidOperationException(
+                    "Payment transaction is not active.");
+            }
 
-                if (current == null)
+            var invoice = await _db.Invoices
+                .Include(i => i.Payments)
+                .FirstOrDefaultAsync(i =>
+                    i.Id == current.InvoiceId);
+
+            if (invoice == null)
+            {
+                throw new InvalidOperationException(
+                    "Invoice not found.");
+            }
+
+            var existingPayment = await _db.Payments
+                .FirstOrDefaultAsync(p =>
+                    p.PaymentMethod == PaymentMethod.PayPal &&
+                    p.TransactionCode == captureId);
+
+            decimal paid =
+                invoice.Payments.Sum(p => p.Amount);
+
+            if (existingPayment != null)
+            {
+                if (existingPayment.InvoiceId != invoice.Id ||
+                    existingPayment.Amount != amount)
                 {
                     throw new InvalidOperationException(
-                        "Payment transaction not found.");
+                        "PayPal capture conflicts with another payment.");
                 }
-
-                if (current.Status != PaymentTransactionStatus.Pending &&
-                    current.Status != PaymentTransactionStatus.Success)
+            }
+            else
+            {
+                if (current.Status == PaymentTransactionStatus.Success)
                 {
                     throw new InvalidOperationException(
-                        "Payment transaction is not active.");
+                        "Successful transaction has no matching payment.");
                 }
 
-                var invoice = await _db.Invoices
-                    .Include(i => i.Payments)
-                    .FirstOrDefaultAsync(i =>
-                        i.Id == current.InvoiceId);
+                decimal remaining =
+                    invoice.TotalAmount - paid;
 
-                if (invoice == null)
+                if (remaining < amount)
                 {
                     throw new InvalidOperationException(
-                        "Invoice not found.");
+                        "Invoice balance changed after PayPal capture.");
                 }
 
-                var existingPayment = await _db.Payments
-                    .FirstOrDefaultAsync(p =>
-                        p.PaymentMethod == PaymentMethod.PayPal &&
-                        p.TransactionCode == captureId);
-
-                decimal paid =
-                    invoice.Payments.Sum(p => p.Amount);
-
-                if (existingPayment != null)
+                _db.Payments.Add(new Payment
                 {
-                    if (existingPayment.InvoiceId != invoice.Id ||
-                        existingPayment.Amount != amount)
-                    {
-                        throw new InvalidOperationException(
-                            "PayPal capture conflicts with another payment.");
-                    }
-                }
-                else
-                {
-                    if (current.Status == PaymentTransactionStatus.Success)
-                    {
-                        throw new InvalidOperationException(
-                            "Successful transaction has no matching payment.");
-                    }
+                    InvoiceId = invoice.Id,
+                    Amount = amount,
+                    PaymentDate = DateTime.UtcNow,
+                    PaymentMethod = PaymentMethod.PayPal,
+                    TransactionCode = captureId
+                });
+                paid += amount;
+            }
 
-                    decimal remaining =
-                        invoice.TotalAmount - paid;
-
-                    if (remaining < amount)
-                    {
-                        throw new InvalidOperationException(
-                            "Invoice balance changed after PayPal capture.");
-                    }
-
-                    _db.Payments.Add(new Payment
-                    {
-                        InvoiceId = invoice.Id,
-                        Amount = amount,
-                        PaymentDate = DateTime.UtcNow,
-                        PaymentMethod = PaymentMethod.PayPal,
-                        TransactionCode = captureId
-                    });
-
-                    paid += amount;
-                }
-
-                current.Status = PaymentTransactionStatus.Success;
-                current.CompletedAt ??= DateTime.UtcNow;
-
-                invoice.Status =
-                    paid >= invoice.TotalAmount
-                        ? InvoiceStatus.Paid
-                        : paid > 0
-                            ? InvoiceStatus.PartiallyPaid
-                            : InvoiceStatus.Unpaid;
-
-                await _db.SaveChangesAsync();
-                await dbTransaction.CommitAsync();
-            });
+            current.Status = PaymentTransactionStatus.Success;
+            current.CompletedAt ??= DateTime.UtcNow;
+            invoice.Status = paid >= invoice.TotalAmount
+                ? InvoiceStatus.Paid
+                : paid > 0 ? InvoiceStatus.PartiallyPaid : InvoiceStatus.Unpaid;
+            await _db.SaveChangesAsync();
+            await write.CommitAsync();
 
             _logger.LogInformation(
                 "PayPal payment recorded. Invoice={InvoiceId}, Capture={CaptureId}",
                 transaction.InvoiceId,
                 captureId);
 
-            TempData["Success"] = "Payment successful!";
+            TempData["Success"] = "Payment completed successfully.";
 
             return RedirectToAction(
                 "Index",
@@ -322,7 +306,7 @@ public class PayPalController : Controller
                 orderId);
 
             TempData["Error"] =
-                "We're checking your payment. Please don't pay again.";
+                "Your payment could not be confirmed. Check its status before paying again.";
 
             return BackToCheckout(transaction.InvoiceId);
         }
@@ -332,22 +316,59 @@ public class PayPalController : Controller
     public async Task<IActionResult> Cancel(string? token)
     {
         var transaction = await GetOwnTransactionAsync(token);
+        if (transaction == null) return NotFound();
+        return View(transaction);
+    }
 
-        if (transaction == null)
-            return NotFound();
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ActionName("Cancel")]
+    public async Task<IActionResult> CancelConfirmed(string token)
+    {
+        await using var write = await _db.BeginWriteAsync(WriteTransaction.Invoices);
+        var transaction = await GetOwnTransactionAsync(token);
+        if (transaction == null) return NotFound();
+        if (transaction.Status != PaymentTransactionStatus.Pending)
+            return BackToCheckout(transaction.InvoiceId);
 
-        if (transaction.Status == PaymentTransactionStatus.Success)
+        try
         {
-            TempData["Success"] = "Payment successful!";
+            if (token.StartsWith("INIT-") && transaction.CreatedAt < DateTime.UtcNow.AddMinutes(-2))
+            {
+                await _db.PaymentTransactions.Where(t => t.Id == transaction.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(t => t.Status, PaymentTransactionStatus.Expired)
+                        .SetProperty(t => t.CompletedAt, (DateTime?)DateTime.UtcNow));
+                await write.CommitAsync();
+                return BackToCheckout(transaction.InvoiceId);
+            }
+            var order = await _paypal.GetOrderAsync(token);
+            if (!IsExpectedOrder(order, transaction))
+                throw new InvalidOperationException("PayPal order mismatch.");
 
-            return RedirectToAction(
-                "Index",
-                "TenantDashboard");
+            // An approved order still needs our Capture action to charge the customer.
+            // That action shares this lock and refuses cancelled transactions.
+            if (order.IsCaptured || order.Status == "COMPLETED" ||
+                (order.CaptureId != null && !order.IsFailed))
+            {
+                return RedirectToAction(nameof(Return), new { token });
+            }
+            if (!order.IsFailed && order.Status is not ("CREATED" or "PAYER_ACTION_REQUIRED" or "APPROVED"))
+            {
+                TempData["Error"] = "Payment status is uncertain. Please check it before cancelling.";
+                return BackToCheckout(transaction.InvoiceId);
+            }
+
+            await _db.PaymentTransactions.Where(t => t.Id == transaction.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(t => t.Status, PaymentTransactionStatus.Cancelled)
+                    .SetProperty(t => t.CompletedAt, (DateTime?)DateTime.UtcNow));
+            await write.CommitAsync();
+            TempData["Success"] = "Payment cancelled. You can now choose another payment method.";
         }
-
-        TempData["Error"] =
-            "Payment cancelled. You can continue when ready.";
-
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Unable to verify cancellation for {OrderId}", token);
+            TempData["Error"] = "We could not verify the payment. Please check its status before paying again.";
+        }
         return BackToCheckout(transaction.InvoiceId);
     }
 

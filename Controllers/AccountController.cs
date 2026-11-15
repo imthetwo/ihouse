@@ -99,7 +99,7 @@ public class AccountController : Controller
 
             ModelState.AddModelError(
                 "",
-                "Account role is not configured.");
+                "You cannot sign in right now. Please contact the property manager.");
 
             return View(model);
         }
@@ -218,9 +218,17 @@ public class AccountController : Controller
         {
             foreach (var error in result.Errors)
             {
-                ModelState.AddModelError(
-                    "",
-                    error.Description);
+                var message = error.Code switch
+                {
+                    "DuplicateEmail" or "DuplicateUserName" => "This email is already registered. Please sign in instead.",
+                    "InvalidEmail" or "InvalidUserName" => "Enter a valid email address.",
+                    "PasswordTooShort" => "Use at least 8 characters for your password.",
+                    "PasswordRequiresDigit" => "Include a number in your password.",
+                    "PasswordRequiresUpper" => "Include an uppercase letter in your password.",
+                    "PasswordRequiresLower" => "Include a lowercase letter in your password.",
+                    _ => "We couldn't create your account. Please try again later."
+                };
+                ModelState.AddModelError("", message);
             }
 
             return View(model);
@@ -258,7 +266,7 @@ public class AccountController : Controller
             await SendConfirmationEmailAsync(user);
 
             TempData["EmailNotice"] =
-                "A verification email has been submitted for delivery. " +
+                "Please check your email for a verification link. " +
                 "Please check your inbox and spam folder. " +
                 "You cannot sign in until your email is verified.";
         }
@@ -413,9 +421,7 @@ public class AccountController : Controller
         }
 
         TempData["EmailNotice"] =
-            "If this email belongs to an unverified account, " +
-            "a verification email will be sent if delivery " +
-            "is available. Please check your inbox and spam folder.";
+            "If your account needs verification, check your inbox and spam folder for a verification link.";
 
         return RedirectToAction(
             nameof(RegisterConfirmation));
@@ -508,7 +514,10 @@ public class AccountController : Controller
         if (string.IsNullOrWhiteSpace(email) ||
             string.IsNullOrWhiteSpace(token))
         {
-            return BadRequest("Invalid reset link.");
+            Response.StatusCode = 400;
+            ViewBag.ErrorTitle = "Reset link unavailable";
+            ViewBag.ErrorMessage = "This password reset link is invalid. Please request a new link.";
+            return View("~/Views/Shared/Error.cshtml");
         }
 
         return View(new ResetPasswordViewModel

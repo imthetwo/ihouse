@@ -129,6 +129,7 @@ var app = builder.Build();
 // Always show a friendly error page,
 // including in Development.
 app.UseExceptionHandler("/Error");
+app.UseStatusCodePagesWithReExecute("/Error/Status", "?code={0}");
 
 if (!app.Environment.IsDevelopment())
 {

@@ -1,0 +1,11 @@
+@model ihouse.Models.PaymentTransaction
+@{ ViewData["Title"] = "Cancel PayPal payment"; Layout = "_TenantLayout"; }
+<div class="container py-4">
+    <h3>Cancel PayPal payment</h3>
+    <p>Cancel this checkout to choose another payment method for invoice #@Model.InvoiceId.</p>
+    <form asp-action="Cancel" method="post">
+        <input type="hidden" name="token" value="@Model.OrderId" />
+        <button class="btn btn-danger" type="submit">Cancel this payment</button>
+        <a class="btn btn-secondary" asp-controller="TenantPayments" asp-action="Checkout" asp-route-id="@Model.InvoiceId">Back to invoice</a>
+    </form>
+</div>

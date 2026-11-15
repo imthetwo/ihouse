@@ -51,6 +51,7 @@ public class ServicePriceController : Controller
     public async Task<IActionResult> Create(
         ServicePriceFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Prices);
         await ValidatePricePeriod(model);
 
         if (!ModelState.IsValid)
@@ -70,6 +71,8 @@ public class ServicePriceController : Controller
         _context.ServicePrices.Add(servicePrice);
 
         await _context.SaveChangesAsync();
+
+        await write.CommitAsync();
 
         TempData["Success"] =
             "Service price created successfully.";
@@ -113,6 +116,7 @@ public class ServicePriceController : Controller
         int id,
         ServicePriceFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Prices);
         var price = await _context.ServicePrices
             .FirstOrDefaultAsync(p => p.Id == id);
 
@@ -159,6 +163,8 @@ public class ServicePriceController : Controller
 
         await _context.SaveChangesAsync();
 
+        await write.CommitAsync();
+
         TempData["Success"] =
             "Service price updated successfully.";
 
@@ -174,6 +180,7 @@ public class ServicePriceController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Prices);
         var price = await _context.ServicePrices
             .FirstOrDefaultAsync(p => p.Id == id);
 
@@ -199,6 +206,7 @@ public class ServicePriceController : Controller
         try
         {
             await _context.SaveChangesAsync();
+            await write.CommitAsync();
 
             TempData["Success"] =
                 "Service price deleted successfully.";
@@ -206,8 +214,7 @@ public class ServicePriceController : Controller
         catch (DbUpdateException)
         {
             TempData["Error"] =
-                "Cannot delete this service price because " +
-                "related records exist.";
+                "This price is already in use and cannot be deleted. You can deactivate it instead.";
         }
 
         return RedirectToAction(nameof(Index));

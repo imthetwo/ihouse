@@ -133,8 +133,8 @@ public sealed class PayPalService
                 response.StatusCode,
                 responseBody);
 
-            throw new InvalidOperationException(
-                "PayPal could not process the request.");
+            throw new HttpRequestException(
+                "PayPal could not process the request.", null, response.StatusCode);
         }
 
         return JsonDocument.Parse(responseBody);

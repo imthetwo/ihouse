@@ -1,4 +1,4 @@
-﻿@model ihouse.Models.Invoice
+@model ihouse.Models.Invoice
 @using System.Globalization
 
 @{
@@ -395,7 +395,7 @@
                                 <span class="payment-option-content">
                                     <span class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                         <strong class="payment-option-title">
-                                            PayPal Sandbox
+                                            PayPal (test mode)
                                         </strong>
 
                                         @if (hasPendingPayPal)
@@ -408,7 +408,7 @@
                                     </span>
 
                                     <small class="payment-option-description">
-                                        Secure online test payment in USD
+                                        Test checkout in USD. No real money is charged.
                                     </small>
                                 </span>
                             </label>
@@ -465,12 +465,17 @@
                             else
                             {
                                 <p class="payment-method-note mb-0">
-                                    You'll be redirected to PayPal Sandbox
+                                    You'll be redirected to PayPal (test mode)
                                     to complete your payment.
                                 </p>
                             }
                         </div>
 
+                        @if (hasPendingPayPal && ViewBag.PendingPayPalOrderId != null)
+                        {
+                            <a asp-controller="PayPal" asp-action="Cancel" asp-route-token="@ViewBag.PendingPayPalOrderId"
+                               class="btn btn-outline-secondary w-100 mb-3">Cancel PayPal checkout</a>
+                        }
                         <!-- CASH FORM -->
                         <form asp-controller="TenantPayments"
                               asp-action="RequestCash"

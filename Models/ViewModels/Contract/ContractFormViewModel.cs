@@ -11,6 +11,8 @@ public class ContractFormViewModel : IValidatableObject
         ErrorMessage = "Please select a room.")]
     public int RoomId { get; set; }
 
+    public List<int> ServicePriceIds { get; set; } = new();
+
     [Range(
         1,
         int.MaxValue,
@@ -62,6 +64,12 @@ public class ContractFormViewModel : IValidatableObject
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
     {
+        if (decimal.Round(RentPrice, 2) != RentPrice)
+            yield return new ValidationResult("Use at most two decimal places.", new[] { nameof(RentPrice) });
+
+        if (decimal.Round(DepositAmount, 2) != DepositAmount)
+            yield return new ValidationResult("Use at most two decimal places.", new[] { nameof(DepositAmount) });
+
         // Validate contract dates.
         if (ContractEndDate <= ContractStartDate)
         {

@@ -168,6 +168,7 @@ public class ContractsController : Controller
     public async Task<IActionResult> Create(
         ContractFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Rooms);
         bool isAdmin = User.IsInRole("Admin");
 
         // Staff can only create Pending contracts
@@ -212,6 +213,8 @@ public class ContractsController : Controller
             ContractEndDate =
                 model.ContractEndDate,
 
+            CheckInDate = model.CheckInDate,
+            CheckOutDate = model.CheckOutDate,
             RentPrice = model.RentPrice,
 
             DepositAmount = model.DepositAmount,
@@ -237,9 +240,12 @@ public class ContractsController : Controller
         // SAVE CONTRACT
         // ======================================
 
+        await SetServices(contract, model.ServicePriceIds);
         _context.Contracts.Add(contract);
 
         await _context.SaveChangesAsync();
+
+        await write.CommitAsync();
 
         TempData["Success"] =
             "Contract created successfully.";
@@ -257,6 +263,7 @@ public class ContractsController : Controller
     {
         var contract = await _context.Contracts
             .AsNoTracking()
+            .Include(c => c.ContractServices)
             .Include(c => c.ContractTenants)
             .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -300,6 +307,8 @@ public class ContractsController : Controller
             ContractEndDate =
                 contract.ContractEndDate,
 
+            CheckInDate = contract.CheckInDate,
+            CheckOutDate = contract.CheckOutDate,
             RentPrice = contract.RentPrice,
 
             DepositAmount = contract.DepositAmount,
@@ -309,6 +318,11 @@ public class ContractsController : Controller
             Status = contract.Status
         };
 
+        var prices = await _context.ServicePrices.AsNoTracking().ToListAsync();
+        model.ServicePriceIds = contract.ContractServices.Where(c => c.IsActive)
+            .Select(c => prices.Where(p => p.ServiceType == c.ServiceType && p.Price == c.UnitPrice)
+                .OrderByDescending(p => p.IsActive).Select(p => p.Id).FirstOrDefault())
+            .Where(id => id > 0).ToList();
         await LoadOptions(model.PrimaryTenantId);
 
         return View(model);
@@ -325,7 +339,9 @@ public class ContractsController : Controller
         int id,
         ContractFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Rooms);
         var contract = await _context.Contracts
+            .Include(c => c.ContractServices)
             .Include(c => c.ContractTenants)
             .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -388,6 +404,19 @@ public class ContractsController : Controller
         // VALIDATE FORM DATA
         // ======================================
 
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(73421, {WriteTransaction.Invoices})");
+        bool hasInvoices = await _context.Invoices.AnyAsync(i => i.ContractId == id);
+        int primaryTenantId = contract.ContractTenants
+            .Where(t => t.IsPrimaryTenant).Select(t => t.TenantId).FirstOrDefault();
+        if (hasInvoices && (contract.RoomId != model.RoomId ||
+            primaryTenantId != model.PrimaryTenantId ||
+            contract.ContractStartDate != model.ContractStartDate ||
+            contract.ContractEndDate != model.ContractEndDate))
+        {
+            ModelState.AddModelError("", "This contract has invoices. Keep its room, tenant and dates unchanged; create a new contract instead.");
+        }
+
         await ValidateContract(model, id);
 
         if (!ModelState.IsValid)
@@ -444,6 +473,8 @@ public class ContractsController : Controller
         contract.ContractEndDate =
             model.ContractEndDate;
 
+        contract.CheckInDate = model.CheckInDate;
+        contract.CheckOutDate = model.CheckOutDate;
         contract.RentPrice = model.RentPrice;
 
         contract.DepositAmount =
@@ -453,12 +484,15 @@ public class ContractsController : Controller
             model.PaymentMethod;
 
         contract.Status = model.Status;
+        await SetServices(contract, model.ServicePriceIds);
 
         // ======================================
         // SAVE CHANGES
         // ======================================
 
         await _context.SaveChangesAsync();
+
+        await write.CommitAsync();
 
         TempData["Success"] =
             "Contract updated successfully.";
@@ -477,6 +511,7 @@ public class ContractsController : Controller
         var contract = await _context.Contracts
             .AsNoTracking()
             .Include(c => c.Room)
+            .Include(c => c.ContractServices)
             .Include(c => c.ContractTenants)
                 .ThenInclude(ct => ct.Tenant)
             .FirstOrDefaultAsync(c => c.Id == id);
@@ -499,6 +534,7 @@ public class ContractsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Terminate(int id)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Rooms);
         var contract = await _context.Contracts
             .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -519,6 +555,8 @@ public class ContractsController : Controller
 
         await _context.SaveChangesAsync();
 
+        await write.CommitAsync();
+
         TempData["Success"] =
             "Contract terminated successfully.";
 
@@ -536,6 +574,13 @@ public class ContractsController : Controller
         // LOAD ROOMS
         // ======================================
 
+        var servicePrices = await _context.ServicePrices.AsNoTracking()
+            .OrderBy(p => p.ServiceType).ThenBy(p => p.EffectiveFrom).ToListAsync();
+        ViewBag.ServiceOptions = servicePrices.Select(p => new SelectListItem
+            {
+                Value = p.Id.ToString(),
+                Text = p.ServiceType + " - $" + p.Price + " (" + p.EffectiveFrom + ")" + (p.IsActive ? "" : " [inactive]")
+            }).ToList();
         var rooms = await _context.Rooms
             .AsNoTracking()
             .OrderBy(r => r.RoomNumber)
@@ -586,6 +631,19 @@ public class ContractsController : Controller
         // ======================================
         // VALIDATE CONTRACT DATES
         // ======================================
+
+        var selectedPrices = await _context.ServicePrices
+            .Where(p => model.ServicePriceIds.Contains(p.Id)).ToListAsync();
+        if (selectedPrices.Count != model.ServicePriceIds.Distinct().Count() ||
+            selectedPrices.GroupBy(p => p.ServiceType).Any(g => g.Count() > 1))
+            ModelState.AddModelError("", "Select at most one valid price for each service type.");
+        // Previously selected prices may be inactive; their agreed price stays valid.
+        var existingServices = currentId.HasValue
+            ? await _context.ContractServices.Where(c => c.ContractId == currentId.Value && c.IsActive).ToListAsync()
+            : new List<ContractService>();
+        if (selectedPrices.Any(p => !p.IsActive && !existingServices.Any(c =>
+                c.ServiceType == p.ServiceType && c.UnitPrice == p.Price)))
+            ModelState.AddModelError("", "New services must use an active price.");
 
         if (model.ContractEndDate <= model.ContractStartDate)
         {
@@ -661,5 +719,17 @@ public class ContractsController : Controller
                 );
             }
         }
+    }
+
+    private async Task SetServices(Contract contract, List<int> priceIds)
+    {
+        var prices = await _context.ServicePrices.Where(p => priceIds.Contains(p.Id)).ToListAsync();
+        _context.ContractServices.RemoveRange(contract.ContractServices);
+        contract.ContractServices.Clear();
+        foreach (var price in prices)
+            contract.ContractServices.Add(new ContractService
+            {
+                ServiceType = price.ServiceType, UnitPrice = price.Price, IsActive = true
+            });
     }
 }

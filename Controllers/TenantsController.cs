@@ -67,6 +67,7 @@ public class TenantsController : Controller
     public async Task<IActionResult> Create(
         TenantFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Tenants);
         ValidateInput(model);
 
         if (!ModelState.IsValid)
@@ -97,6 +98,8 @@ public class TenantsController : Controller
         _context.Tenants.Add(tenant);
 
         await _context.SaveChangesAsync();
+
+        await write.CommitAsync();
 
         TempData["Success"] =
             "Tenant created successfully.";
@@ -139,6 +142,7 @@ public class TenantsController : Controller
         int id,
         TenantFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Tenants);
         ValidateInput(model);
 
         if (!ModelState.IsValid)
@@ -171,6 +175,8 @@ public class TenantsController : Controller
         tenant.Email = Clean(model.Email);
 
         await _context.SaveChangesAsync();
+
+        await write.CommitAsync();
 
         TempData["Success"] =
             "Tenant updated successfully.";
@@ -414,8 +420,7 @@ public class TenantsController : Controller
             }
 
             TempData["Error"] =
-                "Invitation email could not be confirmed as sent. " +
-                "Please check SMTP settings and server logs.";
+                "We couldn't send the invitation. Please try again later.";
 
             return RedirectToAction(
                 nameof(Details),
@@ -447,8 +452,7 @@ public class TenantsController : Controller
                 tenantId);
 
             TempData["Error"] =
-                "Email was accepted by SMTP, but old codes " +
-                "could not be invalidated. Contact the administrator.";
+                "We couldn't finish updating the invitation. Please try again later.";
 
             return RedirectToAction(
                 nameof(Details),
@@ -480,6 +484,7 @@ public class TenantsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Tenants);
         var tenant = await _context.Tenants.FindAsync(id);
 
         if (tenant == null)
@@ -497,7 +502,7 @@ public class TenantsController : Controller
         if (hasContracts || hasMaintenance || hasInvitations)
         {
             TempData["Error"] =
-                "Cannot delete a tenant with related records.";
+                "This tenant has rental or maintenance history and cannot be deleted.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -507,6 +512,7 @@ public class TenantsController : Controller
         try
         {
             await _context.SaveChangesAsync();
+            await write.CommitAsync();
 
             TempData["Success"] =
                 "Tenant deleted successfully.";
@@ -514,7 +520,7 @@ public class TenantsController : Controller
         catch (DbUpdateException)
         {
             TempData["Error"] =
-                "Cannot delete tenant because related records exist.";
+                "This tenant cannot be deleted right now. Please try again later.";
         }
 
         return RedirectToAction(nameof(Index));

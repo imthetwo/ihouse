@@ -233,6 +233,11 @@
 
     </div>
 
+    <div class="col-12">
+        <label asp-for="ServicePriceIds" class="form-label">Services included in monthly invoices</label>
+        <select asp-for="ServicePriceIds" asp-items="ViewBag.ServiceOptions" multiple class="form-select"></select>
+        <div class="form-text">Choose one price for each service. Electricity and water are charged by usage. Other services have a monthly fee.</div>
+    </div>
 </div>
 
 <script src="~/js/contract-form.js"

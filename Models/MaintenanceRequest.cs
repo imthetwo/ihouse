@@ -1,4 +1,4 @@
-﻿using ihouse.Models.Enums;
+using ihouse.Models.Enums;
 
 namespace ihouse.Models
 {
@@ -24,6 +24,9 @@ namespace ihouse.Models
         public DateTime CreatedAt { get; set; }
 
         public DateTime? CompletedAt { get; set; }
+
+        public int? BilledInvoiceId { get; set; }
+        public Invoice? BilledInvoice { get; set; }
 
         // MaintenanceCost relationship
         public ICollection<MaintenanceCost> MaintenanceCosts { get; set; }

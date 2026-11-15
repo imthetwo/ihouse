@@ -44,6 +44,12 @@ public class PaymentFormViewModel : IValidatableObject
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
     {
+        if (decimal.Round(Amount, 2) != Amount)
+        {
+            yield return new ValidationResult(
+                "Use a maximum of two decimal places.", new[] { nameof(Amount) });
+        }
+
         // Manual payments can only be Cash.
         // PayPal payments are handled automatically.
         if (PaymentMethod != PaymentMethod.Cash)

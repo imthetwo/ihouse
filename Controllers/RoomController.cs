@@ -1,6 +1,7 @@
 
 using ihouse.Data;
 using ihouse.Models;
+using ihouse.Models.Enums;
 using ihouse.ViewModels.Room;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -50,6 +51,7 @@ public class RoomsController : Controller
     public async Task<IActionResult> Create(
         RoomFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Rooms);
         ValidateInput(model);
 
         if (!ModelState.IsValid)
@@ -86,6 +88,8 @@ public class RoomsController : Controller
         _context.Rooms.Add(room);
 
         await _context.SaveChangesAsync();
+
+        await write.CommitAsync();
 
         TempData["Success"] =
             "Room created successfully.";
@@ -130,6 +134,7 @@ public class RoomsController : Controller
         int id,
         RoomFormViewModel model)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Rooms);
         ValidateInput(model);
 
         if (!ModelState.IsValid)
@@ -158,6 +163,16 @@ public class RoomsController : Controller
             return View(model);
         }
 
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (model.Status == RoomStatus.Maintenance &&
+            await _context.Contracts.AnyAsync(c => c.RoomId == id &&
+                c.Status == ContractStatus.Active && c.ContractEndDate >= today))
+        {
+            ModelState.AddModelError(nameof(model.Status),
+                "End the current and future active contracts before marking this room for maintenance.");
+            return View(model);
+        }
+
         room.RoomNumber = roomNumber;
         room.Floor = model.Floor;
         room.RoomType = model.RoomType.Trim();
@@ -168,6 +183,8 @@ public class RoomsController : Controller
         room.ImageUrl = model.ImageUrl?.Trim();
 
         await _context.SaveChangesAsync();
+
+        await write.CommitAsync();
 
         TempData["Success"] =
             "Room updated successfully.";
@@ -184,6 +201,7 @@ public class RoomsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Rooms);
         var room = await _context.Rooms
             .FirstOrDefaultAsync(r => r.Id == id);
 
@@ -207,7 +225,7 @@ public class RoomsController : Controller
         if (hasRelatedData)
         {
             TempData["Error"] =
-                "Cannot delete a room with related records.";
+                "This room has rental or maintenance history and cannot be deleted.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -217,6 +235,7 @@ public class RoomsController : Controller
         try
         {
             await _context.SaveChangesAsync();
+            await write.CommitAsync();
 
             TempData["Success"] =
                 "Room deleted successfully.";
@@ -224,7 +243,7 @@ public class RoomsController : Controller
         catch (DbUpdateException)
         {
             TempData["Error"] =
-                "Cannot delete this room because related records exist.";
+                "This room cannot be deleted right now. Please try again later.";
         }
 
         return RedirectToAction(nameof(Index));

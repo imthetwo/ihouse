@@ -53,6 +53,11 @@ public class TenantPaymentsController : Controller
                     t.PaymentMethod == PaymentMethod.PayPal &&
                     t.Status == PaymentTransactionStatus.Pending);
 
+        ViewBag.PendingPayPalOrderId = await _context.PaymentTransactions
+            .Where(t => t.InvoiceId == id && t.PaymentMethod == PaymentMethod.PayPal &&
+                t.Status == PaymentTransactionStatus.Pending &&
+                t.RequestedByUserId == _userManager.GetUserId(User))
+            .Select(t => t.OrderId).FirstOrDefaultAsync();
         return View(invoice);
     }
 
@@ -60,6 +65,13 @@ public class TenantPaymentsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RequestCash(int invoiceId)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Invoices);
+        // Older versions could leave an unfinished local placeholder after a crash.
+        await _context.PaymentTransactions
+            .Where(t => t.InvoiceId == invoiceId && t.Status == PaymentTransactionStatus.Pending &&
+                t.OrderId.StartsWith("INIT-") && t.CreatedAt < DateTime.UtcNow.AddMinutes(-2))
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.Status, PaymentTransactionStatus.Expired)
+                .SetProperty(t => t.CompletedAt, (DateTime?)DateTime.UtcNow));
         var invoice = await GetTenantInvoiceAsync(invoiceId);
 
         if (invoice == null)
@@ -117,6 +129,7 @@ public class TenantPaymentsController : Controller
         _context.PaymentTransactions.Add(transaction);
 
         await _context.SaveChangesAsync();
+        await write.CommitAsync();
 
         TempData["Success"] =
             "Your cash payment request has been submitted. " +
@@ -129,6 +142,13 @@ public class TenantPaymentsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> PayWithPayPal(int invoiceId)
     {
+        await using var write = await _context.BeginWriteAsync(WriteTransaction.Invoices);
+        // Older versions could leave an unfinished local placeholder after a crash.
+        await _context.PaymentTransactions
+            .Where(t => t.InvoiceId == invoiceId && t.Status == PaymentTransactionStatus.Pending &&
+                t.OrderId.StartsWith("INIT-") && t.CreatedAt < DateTime.UtcNow.AddMinutes(-2))
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.Status, PaymentTransactionStatus.Expired)
+                .SetProperty(t => t.CompletedAt, (DateTime?)DateTime.UtcNow));
         var invoice = await GetTenantInvoiceAsync(invoiceId);
 
         if (invoice == null)
@@ -180,8 +200,7 @@ public class TenantPaymentsController : Controller
             if (pending.OrderId.StartsWith("INIT-"))
             {
                 TempData["Error"] =
-                    "Your previous payment is being prepared. " +
-                    "Please try again shortly.";
+                    "Checkout is not ready yet. Please try again in a moment.";
 
                 return RedirectToCheckout(invoiceId);
             }
@@ -199,7 +218,7 @@ public class TenantPaymentsController : Controller
                 {
                     TempData["Error"] =
                         "We couldn't verify your payment. " +
-                        "Please contact support.";
+                        "Please contact your property manager.";
 
                     return RedirectToCheckout(invoiceId);
                 }
@@ -211,6 +230,7 @@ public class TenantPaymentsController : Controller
                         PaymentTransactionStatus.Failed;
 
                     await _context.SaveChangesAsync();
+                    await write.CommitAsync();
 
                     TempData["Error"] =
                         "Your previous payment was unsuccessful. " +
@@ -242,9 +262,18 @@ public class TenantPaymentsController : Controller
                 }
 
                 TempData["Error"] =
-                    "Your payment is still being checked. " +
-                    "Please wait before trying again.";
+                    "Your payment has not been confirmed. Please check its status again later.";
 
+                return RedirectToCheckout(invoiceId);
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound &&
+                pending.CreatedAt < DateTime.UtcNow.AddHours(-3))
+            {
+                pending.Status = PaymentTransactionStatus.Expired;
+                pending.CompletedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                await write.CommitAsync();
+                TempData["Error"] = "The previous PayPal order has expired. You can choose another payment method.";
                 return RedirectToCheckout(invoiceId);
             }
             catch (Exception ex)
@@ -283,10 +312,6 @@ public class TenantPaymentsController : Controller
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.PaymentTransactions.Add(transaction);
-
-        await _context.SaveChangesAsync();
-
         try
         {
             string returnUrl = Url.Action(
@@ -308,8 +333,9 @@ public class TenantPaymentsController : Controller
                 cancelUrl);
 
             transaction.OrderId = result.OrderId;
-
+            _context.PaymentTransactions.Add(transaction);
             await _context.SaveChangesAsync();
+            await write.CommitAsync();
 
             return Redirect(result.ApprovalUrl);
         }
@@ -319,23 +345,6 @@ public class TenantPaymentsController : Controller
                 ex,
                 "Failed to start PayPal checkout for invoice {InvoiceId}",
                 invoiceId);
-
-            if (transaction.OrderId.StartsWith("INIT-"))
-            {
-                transaction.Status =
-                    PaymentTransactionStatus.Failed;
-
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (Exception saveException)
-                {
-                    _logger.LogError(
-                        saveException,
-                        "Unable to update PayPal transaction.");
-                }
-            }
 
             TempData["Error"] =
                 "We couldn't open PayPal checkout. " +

@@ -1,4 +1,4 @@
-﻿using ihouse.Models;
+using ihouse.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,6 +33,18 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Room>().HasIndex(r => r.RoomNumber).IsUnique();
+        modelBuilder.Entity<Tenant>().HasIndex(t => t.IdentityNumber).IsUnique();
+        modelBuilder.Entity<MeterReading>().HasIndex(r => new { r.RoomId, r.ReadingDay }).IsUnique();
+        modelBuilder.Entity<PaymentTransaction>().HasIndex(t => t.InvoiceId)
+            .IsUnique().HasFilter("\"Status\" = 0");
+        modelBuilder.Entity<Payment>().HasIndex(p => p.TransactionCode)
+            .IsUnique().HasFilter("\"TransactionCode\" IS NOT NULL");
+        modelBuilder.Entity<Invoice>().Property<int>("BillingMonth")
+            .HasComputedColumnSql("EXTRACT(YEAR FROM \"InvoiceDate\")::integer * 100 + EXTRACT(MONTH FROM \"InvoiceDate\")::integer", stored: true);
+        modelBuilder.Entity<Invoice>().HasIndex("ContractId", "BillingMonth").IsUnique();
+
 
         modelBuilder.Entity<ContractTenant>()
             .HasKey(ct => new
@@ -112,6 +124,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithMany(t => t.MaintenanceRequests)
             .HasForeignKey(mr => mr.TenantId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<MaintenanceRequest>()
+            .HasOne(m => m.BilledInvoice).WithMany()
+            .HasForeignKey(m => m.BilledInvoiceId).OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<MaintenanceCost>()
             .HasOne(mc => mc.MaintenanceRequest)

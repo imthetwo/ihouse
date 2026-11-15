@@ -145,8 +145,7 @@ public class PaymentController : Controller
         try
         {
             await using var transaction =
-                await _context.Database.BeginTransactionAsync(
-                    IsolationLevel.Serializable);
+                await _context.BeginWriteAsync(WriteTransaction.Invoices);
 
             var invoice = await _context.Invoices
                 .Include(i => i.Payments)
@@ -277,8 +276,7 @@ public class PaymentController : Controller
         try
         {
             await using var transaction =
-                await _context.Database.BeginTransactionAsync(
-                    IsolationLevel.Serializable);
+                await _context.BeginWriteAsync(WriteTransaction.Invoices);
 
             var request = await _context.PaymentTransactions
                 .FirstOrDefaultAsync(t =>
@@ -393,8 +391,7 @@ public class PaymentController : Controller
         try
         {
             await using var transaction =
-                await _context.Database.BeginTransactionAsync(
-                    IsolationLevel.Serializable);
+                await _context.BeginWriteAsync(WriteTransaction.Invoices);
 
             var request = await _context.PaymentTransactions
                 .FirstOrDefaultAsync(t =>

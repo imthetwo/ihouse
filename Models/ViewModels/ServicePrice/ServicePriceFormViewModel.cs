@@ -26,6 +26,9 @@ public class ServicePriceFormViewModel : IValidatableObject
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
     {
+        if (decimal.Round(Price, 2) != Price)
+            yield return new ValidationResult("Use at most two decimal places.", new[] { nameof(Price) });
+
         if (EffectiveFrom == default)
         {
             yield return new ValidationResult(
