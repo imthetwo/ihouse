@@ -1,0 +1,216 @@
+
+@model ihouse.Models.Invoice
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Invoice Details";
+    Layout = "_AdminLayout";
+
+    var usd = CultureInfo.GetCultureInfo("en-US");
+    var paidAmount = Model.Payments.Sum(p => p.Amount);
+    var balance = Model.TotalAmount - paidAmount;
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a asp-controller="Invoices" asp-action="Index"
+               class="text-decoration-none text-muted">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Invoices
+            </a>
+            <h4 class="fw-bold mt-3 mb-1">
+                Invoice #@Model.Id
+            </h4>
+        </div>
+
+        <span class="badge bg-primary-subtle text-primary fs-6">
+            @Model.Status
+        </span>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">Total Amount</p>
+                    <h4 class="fw-bold">
+                        @Model.TotalAmount.ToString("C2", usd)
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">Amount Paid</p>
+                    <h4 class="fw-bold text-success">
+                        @paidAmount.ToString("C2", usd)
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">Remaining Balance</p>
+                    <h4 class="fw-bold text-danger">
+                        @balance.ToString("C2", usd)
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">Invoice Information</h5>
+
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Invoice</dt>
+                <dd class="col-sm-8">#@Model.Id</dd>
+
+                <dt class="col-sm-4">Contract</dt>
+                <dd class="col-sm-8">
+                    <a asp-controller="Contracts"
+                       asp-action="Details"
+                       asp-route-id="@Model.ContractId"
+                       class="text-decoration-none fw-semibold">
+                        Contract #@Model.ContractId
+                        <i class="bi bi-box-arrow-up-right ms-1" aria-hidden="true"></i>
+                    </a>
+                </dd>
+
+                <dt class="col-sm-4">Room</dt>
+                <dd class="col-sm-8">@Model.Contract.Room.RoomNumber</dd>
+
+                <dt class="col-sm-4">Tenant</dt>
+                <dd class="col-sm-8">
+                    @if (Model.Contract.ContractTenants.Any())
+                    {
+                        @string.Join(", ", Model.Contract.ContractTenants
+                            .OrderByDescending(ct => ct.IsPrimaryTenant)
+                            .ThenBy(ct => ct.Tenant.FullName)
+                            .Select(ct => ct.Tenant.FullName))
+                    }
+                    else
+                    {
+                        <span class="text-muted">No tenant assigned</span>
+                    }
+                </dd>
+
+                <dt class="col-sm-4">Invoice Date</dt>
+                <dd class="col-sm-8">@Model.InvoiceDate.ToString("dd/MM/yyyy")</dd>
+
+                <dt class="col-sm-4">Due Date</dt>
+                <dd class="col-sm-8">@Model.DueDate.ToString("dd/MM/yyyy")</dd>
+
+                <dt class="col-sm-4">Total Amount</dt>
+                <dd class="col-sm-8">@Model.TotalAmount.ToString("C2", usd)</dd>
+
+                <dt class="col-sm-4">Status</dt>
+                <dd class="col-sm-8">@Model.Status</dd>
+            </dl>
+
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">Invoice Items</h5>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in Model.InvoiceItems)
+                        {
+                            <tr>
+                                <td>@item.ItemType</td>
+                                <td>@(item.Description ?? "-")</td>
+                                <td>@item.Quantity.ToString("N2")</td>
+                                <td>@item.UnitPrice.ToString("C2", usd)</td>
+                                <td class="fw-semibold">
+                                    @item.Amount.ToString("C2", usd)
+                                </td>
+                            </tr>
+                        }
+
+                        @if (!Model.InvoiceItems.Any())
+                        {
+                            <tr>
+                                <td colspan="5"
+                                    class="text-center text-muted py-4">
+                                    No invoice items found.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">Payment History</h5>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Method</th>
+                            <th>Transaction Code</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var payment in Model.Payments)
+                        {
+                            <tr>
+                                <td>
+                                    @payment.PaymentDate.ToString("dd/MM/yyyy")
+                                </td>
+                                <td>@payment.PaymentMethod</td>
+                                <td>@(payment.TransactionCode ?? "-")</td>
+                                <td class="fw-semibold">
+                                    @payment.Amount.ToString("C2", usd)
+                                </td>
+                            </tr>
+                        }
+
+                        @if (!Model.Payments.Any())
+                        {
+                            <tr>
+                                <td colspan="4"
+                                    class="text-center text-muted py-4">
+                                    No payments recorded.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+</div>

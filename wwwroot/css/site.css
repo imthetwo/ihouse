@@ -23,7 +23,6 @@
     --radius-lg: 18px;
     --shadow-card: 0 12px 40px rgba(26, 58, 100, 0.10);
 
-
     :root {
         --color-primary: #0866D9;
         --color-primary-hover: #0755B4;
@@ -63,22 +62,6 @@
         padding: 28px 18px 20px;
         color: white;
         background: var(--color-primary);
-    }
-
-    .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 0 12px;
-        color: white;
-        font-size: 28px;
-        font-weight: 700;
-        text-decoration: none;
-    }
-
-    .brand-icon {
-        font-size: 36px;
-        line-height: 1;
     }
 
     .sidebar-subtitle {
@@ -238,41 +221,9 @@
     }
 }
 
-/* ==========================================
-   IHOUSE - SHARED LOGO
-========================================== */
-
-.ihouse-logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-    color: #082c5a;
-    white-space: nowrap;
-}
-
-    .ihouse-logo:hover {
-        color: #082c5a;
-        text-decoration: none;
-    }
-
-.ihouse-logo-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 46px;
-    height: 46px;
-    flex-shrink: 0;
-    border-radius: 14px;
-    background: #eaf2ff;
-    color: #0866ff;
-    font-size: 23px;
-}
-
-.ihouse-logo-name {
-    color: #082c5a;
-    font-size: 26px;
-    font-weight: 750;
-    letter-spacing: -0.6px;
-    line-height: 1.1;
-}
+.icon-56 { width: 56px; height: 56px; }
+.icon-64 { width: 64px; height: 64px; }
+.icon-80 { width: 80px; height: 80px; }
+.icon-38 { font-size: 38px; }
+.meter-search { width: 100%; max-width: 500px; }
+.room-page-button { min-width: 36px; }

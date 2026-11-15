@@ -1,0 +1,34 @@
+
+@{
+    var homeController = DashboardNavigation.ControllerFor(User);
+    var homeAction = DashboardNavigation.ActionFor(User);
+    ViewData["Title"] = "Access Denied";
+    Layout = "_AuthLayout";
+}
+
+<div class="forgot-page">
+    <div class="forgot-card">
+
+        <div class="auth-result-icon auth-result-danger">
+            <i class="bi bi-shield-lock"></i>
+        </div>
+
+        <div class="forgot-heading text-center">
+            <h1>Access Denied</h1>
+
+            <p>
+                You don't have permission to access this page.
+                Please contact your administrator if you believe
+                this is a mistake.
+            </p>
+        </div>
+
+        <a asp-controller="@homeController"
+           asp-action="@homeAction"
+           class="btn btn-primary auth-submit
+                  d-flex align-items-center justify-content-center">
+            Back to Home
+        </a>
+
+    </div>
+</div>

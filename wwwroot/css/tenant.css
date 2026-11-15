@@ -24,24 +24,6 @@
     border-bottom: 1px solid #dce5f0;
 }
 
-.tenant-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    color: #0866d9;
-    font-size: 24px;
-    font-weight: 700;
-    text-decoration: none;
-}
-
-    .tenant-brand:hover {
-        color: #0866d9;
-    }
-
-    .tenant-brand i {
-        font-size: 26px;
-    }
-
 /* Navigation links */
 
 .tenant-nav-link {
@@ -175,8 +157,6 @@
     }
 }
 
-
-
 /* ==========================================
    TENANT - INTERACTIVE DASHBOARD CARDS
 ========================================== */
@@ -239,8 +219,6 @@
     }
 }
 
-
-
 /* ==========================================
    TENANT - HEADER
 ========================================== */
@@ -263,57 +241,6 @@
     justify-content: space-between;
     gap: 16px;
 }
-
-
-/* ==========================================
-   TENANT - BRAND (MATCH ADMIN)
-========================================== */
-
-.ih-tenant-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    color: #0866d9;
-    text-decoration: none;
-}
-
-    .ih-tenant-brand:hover {
-        color: #0866d9;
-    }
-
-.ih-brand-icon {
-    width: 42px;
-    height: 42px;
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    background: #0866d9;
-    color: #ffffff;
-    font-size: 20px;
-}
-
-.ih-tenant-brand-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.ih-tenant-brand-title {
-    color: #0866d9;
-    font-size: 28px;
-    font-weight: 800;
-    line-height: 1.1;
-}
-
-.ih-tenant-label {
-    margin-top: 3px;
-    color: #718096;
-    font-size: 11px;
-    font-weight: 400;
-}
-
 
 /* ==========================================
    TENANT - ACCOUNT
@@ -439,16 +366,8 @@ body.tenant-body {
         padding: 20px 14px;
     }
 
-    .ih-tenant-label,
-    .ih-account-info {
-        display: none;
-    }
-
     .ih-account-button {
         padding: 5px;
     }
 
-    .ih-tenant-brand {
-        font-size: 21px;
-    }
 }

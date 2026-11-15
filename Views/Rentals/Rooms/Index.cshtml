@@ -1,0 +1,375 @@
+
+@model IEnumerable<ihouse.Models.Room>
+@using ihouse.Models.Enums
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Room Management";
+    Layout = "_AdminLayout";
+
+    var rooms = Model.ToList();
+    var usd = CultureInfo.GetCultureInfo("en-US");
+
+    var roomTypes = rooms
+        .Select(r => r.RoomType)
+        .Distinct()
+        .OrderBy(t => t)
+        .ToList();
+
+    int totalRooms = rooms.Count;
+    int maintenanceRooms = rooms.Count(r =>
+        r.Status == RoomStatus.Maintenance);
+}
+
+<div class="container-fluid py-4">
+
+    
+<!-- PAGE HEADER -->
+<div class="admin-page-header">
+
+    <h4 class="admin-page-title">
+        Room Management
+    </h4>
+
+    @* Add Room button: opens the Create.cshtml form in this folder. *@
+    @if (User.IsInRole("Admin"))
+    {
+        <a asp-controller="Rooms"
+           asp-action="Create"
+           class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>
+            Add Room
+        </a>
+    }
+
+</div>
+
+
+    <!-- NOTIFICATIONS -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- STATISTICS -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+
+                    <p class="text-muted mb-2">
+                        Total Rooms
+                    </p>
+
+                    <h2 class="fw-bold mb-0">
+                        @totalRooms
+                    </h2>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+
+                    <p class="text-muted mb-2">
+                        Operational Rooms
+                    </p>
+
+                    <h2 class="fw-bold text-success mb-0">
+                        @(totalRooms - maintenanceRooms)
+                    </h2>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+
+                    <p class="text-muted mb-2">
+                        Under Maintenance
+                    </p>
+
+                    <h2 class="fw-bold text-warning mb-0">
+                        @maintenanceRooms
+                    </h2>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ROOM LIST -->
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-body p-4">
+
+            <!-- SEARCH AND FILTERS -->
+            <div class="row g-3 mb-4">
+
+                <div class="col-12 col-lg-5">
+
+                    <label for="roomSearch"
+                           class="form-label fw-semibold">
+                        Search Rooms
+                    </label>
+
+                    <div class="input-group">
+
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search"></i>
+                        </span>
+
+                        <input id="roomSearch"
+                               type="search"
+                               class="form-control"
+                               placeholder="Search room number or type..." />
+
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4 col-lg-3">
+
+                    <label for="typeFilter"
+                           class="form-label fw-semibold">
+                        Room Type
+                    </label>
+
+                    <select id="typeFilter" class="form-select">
+
+                        <option value="">All Types</option>
+
+                        @foreach (var type in roomTypes)
+                        {
+                            <option value="@type">@type</option>
+                        }
+
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-4 col-lg-2">
+
+                    <label for="statusFilter"
+                           class="form-label fw-semibold">
+                        Status
+                    </label>
+
+                    <select id="statusFilter" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="Active">Active</option>
+                        <option value="Maintenance">Maintenance</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-4 col-lg-2 d-flex align-items-end">
+
+                    <button id="resetFilters"
+                            type="button"
+                            class="btn btn-outline-secondary w-100">
+
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>
+                        Reset
+
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- ROOM TABLE -->
+            <div class="table-responsive">
+
+                <table class="table align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Room Number</th>
+                            <th>Floor</th>
+                            <th>Room Type</th>
+                            <th>Capacity</th>
+                            <th>Monthly Rent</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var room in rooms)
+                        {
+                            <tr class="room-row"
+                                data-number="@room.RoomNumber"
+                                data-type="@room.RoomType"
+                                data-status="@room.Status">
+
+                                <!-- IMAGE -->
+                                <td>
+                                    <div class="room-image-placeholder">
+
+                                        <i class="bi bi-image fs-4"></i>
+
+                                        @if (!string.IsNullOrWhiteSpace(room.ImageUrl))
+                                        {
+                                            <img src="@room.ImageUrl"
+                                                 alt="Room @room.RoomNumber"
+                                                 loading="lazy"
+                                                 class="room-thumbnail position-absolute top-0 start-0"
+                                                 onerror="this.remove();" />
+                                        }
+
+                                    </div>
+                                </td>
+
+                                <!-- ROOM NUMBER -->
+                                <td class="fw-semibold">
+                                    @room.RoomNumber
+                                </td>
+
+                                <!-- FLOOR -->
+                                <td>
+                                    @room.Floor
+                                </td>
+
+                                <!-- ROOM TYPE -->
+                                <td>
+                                    @room.RoomType
+                                </td>
+
+                                <!-- CAPACITY -->
+                                <td>
+                                    <i class="bi bi-people text-muted me-1"></i>
+                                    @room.Capacity
+                                </td>
+
+                                <!-- RENT -->
+                                <td class="fw-semibold">
+                                    @room.RentPrice.ToString("C2", usd)
+                                </td>
+
+                                <!-- STATUS -->
+                                <td>
+                                    @if (room.Status == RoomStatus.Active)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2">
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-2">
+                                            Maintenance
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- ACTIONS -->
+                                <td class="text-end">
+
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <div class="d-inline-flex gap-2">
+
+                                            <a asp-controller="Rooms"
+                                               asp-action="Edit"
+                                               asp-route-id="@room.Id"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil-square me-1"></i>
+                                                Edit
+                                            </a>
+
+                                            <form asp-controller="Rooms"
+                                                  asp-action="Delete"
+                                                  asp-route-id="@room.Id"
+                                                  method="post"
+                                                  data-confirm="Delete this room?">
+
+                                                @Html.AntiForgeryToken()
+
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger">
+
+                                                    <i class="bi bi-trash me-1"></i>
+                                                    Delete
+                                                </button>
+
+                                            </form>
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">
+                                            View only
+                                        </span>
+                                    }
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <!-- EMPTY STATE -->
+            <div id="emptyMessage"
+                 class="text-center text-muted py-4 d-none">
+                No rooms found.
+            </div>
+
+            <!-- PAGINATION -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-4">
+
+                <small id="resultCount"
+                       class="text-muted">
+                </small>
+
+                <div class="d-flex align-items-center flex-wrap gap-2">
+
+                    <button id="prevBtn"
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-chevron-left"></i>
+                        Previous
+                    </button>
+
+                    <div id="pageNumbers"
+                         class="d-flex align-items-center flex-wrap gap-1">
+                    </div>
+
+                    <button id="nextBtn"
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary">
+                        Next
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/rooms.js" asp-append-version="true" defer></script>
+}

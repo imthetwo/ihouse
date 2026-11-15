@@ -15,7 +15,6 @@
     min-height: 100vh;
 }
 
-
 /* ==========================================
    ADMIN - ACCOUNT DROPDOWN
 ========================================== */
@@ -76,7 +75,8 @@
 }
 
 .ih-admin-dropdown {
-    min-width: 240px;
+    width: min(340px, calc(100vw - 32px));
+    min-width: 0;
     border: 1px solid #e5eaf2;
     border-radius: 14px;
     padding: 8px;
@@ -115,62 +115,6 @@
     padding: 24px 16px;
     background: #ffffff;
     border-right: 1px solid #dce5f0;
-}
-
-.admin-brand,
-.tenant-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #0866d9;
-    font-size: 24px;
-    font-weight: 700;
-    text-decoration: none;
-}
-
-    .admin-brand:hover,
-    .tenant-brand:hover {
-        color: #0866d9;
-    }
-
-/* Brand icon - old layout */
-.admin-brand-icon,
-.tenant-brand-icon {
-    font-size: 32px;
-}
-
-/* Brand icon - new layout */
-.admin-brand-badge {
-    width: 42px;
-    height: 42px;
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    background: #0866d9;
-    color: #ffffff;
-    font-size: 20px;
-}
-
-.admin-brand-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.admin-brand-title {
-    color: #0866d9;
-    font-size: 28px;
-    font-weight: 800;
-    line-height: 1.1;
-}
-
-.admin-brand-subtitle {
-    margin-top: 3px;
-    color: #718096;
-    font-size: 11px;
-    font-weight: 400;
 }
 
 /* Sidebar navigation */
@@ -315,7 +259,6 @@
 
 /* Footer */
 
-
 /* ==========================================
    ADMIN FOOTER
 ========================================== */
@@ -333,7 +276,6 @@
     text-align: center;
     font-size: 12px;
 }
-
 
 /* ==========================================
    ADMIN - TABLES

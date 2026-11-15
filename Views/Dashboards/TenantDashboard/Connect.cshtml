@@ -1,0 +1,49 @@
+@{
+    ViewData["Title"] = "Connect Contract";
+    Layout = "_TenantLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/tenant-connect.css" asp-append-version="true" />
+}
+
+<div class="connect-container">
+    <div class="connect-card">
+        <div class="connect-icon"><i class="bi bi-house-add"></i></div>
+        <h1 class="connect-title mb-3">Connect Your Contract</h1>
+        <p class="connect-description mb-4">
+            Enter the invitation code from your property manager to view your room, invoices and maintenance requests.
+        </p>
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success small" role="alert">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger small" role="alert">@TempData["Error"]</div>
+        }
+        <div asp-validation-summary="All" class="alert alert-danger small" role="alert"></div>
+        <form id="connectContractForm" asp-controller="TenantDashboard" asp-action="Connect" method="post">
+            <div class="mb-3">
+                <label for="code" class="form-label fw-semibold">Contract Invitation Code</label>
+                <input id="code" name="code" type="text" class="form-control connect-input"
+                       placeholder="Enter your invitation code" maxlength="128" autocomplete="off"
+                       autocapitalize="off" spellcheck="false" required autofocus />
+            </div>
+            <button id="connectSubmitButton" type="submit" class="btn btn-primary connect-submit w-100">
+                <i class="bi bi-link-45deg me-2"></i>
+                <span id="connectButtonText">Connect Contract</span>
+            </button>
+        </form>
+        <div class="alert alert-light border mt-4 mb-0 small">
+            Invitation codes expire after 24 hours and can only be used once.
+        </div>
+        <p class="text-center text-muted small mt-4 mb-0">
+            Don't have an invitation code? Contact your property manager.
+        </p>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/tenant-connect.js" asp-append-version="true" defer></script>
+}

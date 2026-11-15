@@ -11,7 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 // =====================================
 // MVC
 // =====================================
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddRazorOptions(ihouse.Configuration.ViewFolders.Configure);
 
 // =====================================
 // DATABASE - POSTGRESQL

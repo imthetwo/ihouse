@@ -1,0 +1,214 @@
+
+@model ihouse.ViewModels.Invoice.InvoiceFormViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Create Invoice";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="mb-4">
+        <a asp-controller="Invoices"
+           asp-action="Index"
+           class="text-decoration-none">
+
+            <i class="bi bi-arrow-left me-2"></i>
+            Back to Invoices
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-body p-4">
+
+            <h4 class="fw-bold mb-2">
+                Create Invoice
+            </h4>
+
+            <p class="text-muted mb-4">
+                Generate a monthly rental invoice.
+            </p>
+
+            <p class="text-muted">Rent and monthly services are included. Electricity and water are billed from the previous month's readings.</p>
+            <form asp-controller="Invoices"
+                  asp-action="Create"
+                  method="post" data-period-url="@Url.Action("ContractPeriod", "Invoices")">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3"></div>
+
+                <div id="contractLoadError" class="alert alert-danger d-none" role="alert">
+                    We couldn't load the contract information.
+                    <button type="button" id="retryContract" class="btn btn-sm btn-outline-danger">Try again</button>
+                </div>
+                <div class="row g-3">
+
+                    <!-- RENTAL CONTRACT -->
+                    <div class="col-12">
+
+                        <label asp-for="ContractId"
+                               class="form-label fw-semibold">
+                            Rental Contract
+                        </label>
+
+                        <select asp-for="ContractId"
+                                asp-items="(IEnumerable<SelectListItem>)ViewBag.ContractOptions"
+                                class="form-select"
+                                id="ContractId">
+
+                            <option value="0">
+                                -- Select Active Contract --
+                            </option>
+
+                        </select>
+
+                        <span asp-validation-for="ContractId"
+                              class="text-danger small"></span>
+
+                    </div>
+
+                    <!-- CONTRACT INFORMATION -->
+                    <div class="col-12">
+
+                        <div id="contractInfo"
+                             class="contract-info-box d-none">
+
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <i class="bi bi-info-circle text-primary"></i>
+                                <strong>Contract Information</strong>
+                            </div>
+
+                            <div class="row g-3">
+
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block">
+                                        Start Date
+                                    </small>
+
+                                    <strong id="contractStart">
+                                        -
+                                    </strong>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block">
+                                        End Date
+                                    </small>
+
+                                    <strong id="contractEnd">
+                                        -
+                                    </strong>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block">
+                                        Monthly Rent
+                                    </small>
+
+                                    <strong id="contractRent">
+                                        -
+                                    </strong>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- INVOICE DATE -->
+                    <div class="col-md-6">
+
+                        <label asp-for="InvoiceDate"
+                               class="form-label fw-semibold">
+                            Invoice Date
+                        </label>
+
+                        <input asp-for="InvoiceDate"
+                               type="date"
+                               class="form-control invoice-date-input"
+                               id="InvoiceDate"
+                               required />
+
+                        <span asp-validation-for="InvoiceDate"
+                              class="text-danger small"></span>
+
+                        <div class="form-text">
+                            Must be within the contract period.
+                        </div>
+
+                    </div>
+
+                    <!-- DUE DATE -->
+                    <div class="col-md-6">
+
+                        <label asp-for="DueDate"
+                               class="form-label fw-semibold">
+                            Due Date
+                        </label>
+
+                        <input asp-for="DueDate"
+                               type="date"
+                               class="form-control invoice-date-input"
+                               id="DueDate"
+                               required />
+
+                        <span asp-validation-for="DueDate"
+                              class="text-danger small"></span>
+
+                        <div class="form-text">
+                            Automatically set to 7 days after invoice date.
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- INFO -->
+                <div class="alert alert-info mt-4 mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+
+                    The invoice amount will be calculated
+                    automatically from the contract's monthly rent.
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
+
+                    <a asp-controller="Invoices"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-primary"
+                            id="createInvoiceButton">
+
+                        <i class="bi bi-receipt me-2"></i>
+                        Create Invoice
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/invoice-create.css" asp-append-version="true" />
+}
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script src="~/js/invoice-create.js" asp-append-version="true" defer></script>
+}

@@ -1,0 +1,299 @@
+
+@model ihouse.ViewModels.Staff.StaffDashboardViewModel
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Staff Dashboard";
+    Layout = "_AdminLayout";
+
+    var usd = CultureInfo.GetCultureInfo("en-US");
+
+    var modules = new[]
+    {
+        new {
+            Title = "Rooms",
+            Description = "Manage property rooms",
+            Controller = "Rooms",
+            Icon = "bi-door-open"
+        },
+        new {
+            Title = "Tenants",
+            Description = "View tenant information",
+            Controller = "Tenants",
+            Icon = "bi-people"
+        },
+        new {
+            Title = "Contracts",
+            Description = "Manage rental contracts",
+            Controller = "Contracts",
+            Icon = "bi-file-earmark-text"
+        },
+        new {
+            Title = "Invoices",
+            Description = "Manage rental invoices",
+            Controller = "Invoices",
+            Icon = "bi-receipt"
+        },
+        new {
+            Title = "Payments",
+            Description = "Review and verify payments",
+            Controller = "Payment",
+            Icon = "bi-credit-card"
+        },
+        new {
+            Title = "Maintenance",
+            Description = "Review maintenance requests",
+            Controller = "Maintenance",
+            Icon = "bi-tools"
+        }
+    };
+}
+
+<link rel="stylesheet"
+      href="~/css/staff-dashboard.css"
+      asp-append-version="true" />
+
+<div class="container-fluid staff-dashboard py-4">
+
+    <!-- HEADER -->
+    <div class="staff-header mb-4">
+        <a asp-controller="Payment"
+           asp-action="Index"
+           class="btn staff-header-action">
+
+            <i class="bi bi-credit-card me-2"></i>
+            Payment Management
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- STATISTICS -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="staff-stat-card">
+                <div class="staff-stat-top">
+                    <span>Total Rooms</span>
+
+                    <div class="staff-stat-icon icon-blue">
+                        <i class="bi bi-door-open"></i>
+                    </div>
+                </div>
+
+                <div class="staff-stat-value">
+                    @Model.TotalRooms
+                </div>
+
+                <div class="staff-stat-caption">
+                    Registered rooms
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="staff-stat-card">
+                <div class="staff-stat-top">
+                    <span>Total Tenants</span>
+
+                    <div class="staff-stat-icon icon-green">
+                        <i class="bi bi-people"></i>
+                    </div>
+                </div>
+
+                <div class="staff-stat-value">
+                    @Model.TotalTenants
+                </div>
+
+                <div class="staff-stat-caption">
+                    Tenant profiles
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="staff-stat-card">
+                <div class="staff-stat-top">
+                    <span>Outstanding Invoices</span>
+
+                    <div class="staff-stat-icon icon-orange">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                </div>
+
+                <div class="staff-stat-value">
+                    @Model.UnpaidInvoices
+                </div>
+
+                <div class="staff-stat-caption">
+                    Invoices with remaining balance
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="staff-stat-card">
+                <div class="staff-stat-top">
+                    <span>Pending Cash Payments</span>
+
+                    <div class="staff-stat-icon icon-purple">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                </div>
+
+                <div class="staff-stat-value">
+                    @Model.PendingCashPayments
+                </div>
+
+                <div class="staff-stat-caption">
+                    Awaiting staff verification
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- QUICK ACCESS -->
+    <div class="staff-panel mb-4">
+        <div class="staff-panel-header">
+            <div>
+                <h5 class="fw-bold mb-1">
+                    Quick Access
+                </h5>
+
+                <p class="text-muted small mb-0">
+                    Access your daily management tools.
+                </p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            @foreach (var module in modules)
+            {
+                <div class="col-xl-4 col-md-6">
+                    <a asp-controller="@module.Controller"
+                       asp-action="Index"
+                       class="staff-module">
+
+                        <span class="staff-module-icon">
+                            <i class="bi @module.Icon"></i>
+                        </span>
+
+                        <span class="staff-module-info">
+                            <strong>@module.Title</strong>
+                            <small>@module.Description</small>
+                        </span>
+
+                        <i class="bi bi-arrow-up-right staff-module-arrow"></i>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- PENDING CASH REQUESTS -->
+    <div class="staff-panel">
+        <div class="staff-panel-header">
+            <div>
+                <h5 class="fw-bold mb-1">
+                    Pending Cash Requests
+                </h5>
+
+                <p class="text-muted small mb-0">
+                    Recent requests awaiting verification.
+                </p>
+            </div>
+
+            <a asp-controller="Payment"
+               asp-action="Index"
+               class="staff-view-all">
+                View All
+                <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        @if (Model.RecentCashRequests.Any())
+        {
+            <div class="table-responsive">
+                <table class="table staff-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Invoice</th>
+                            <th>Contract</th>
+                            <th>Requested (UTC)</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var request in Model.RecentCashRequests)
+                        {
+                            <tr>
+                                <td class="fw-semibold">
+                                    #@request.InvoiceId
+                                </td>
+
+                                <td>
+                                    #@request.ContractId
+                                </td>
+
+                                <td>
+                                    @request.RequestedAt.ToString("dd/MM/yyyy HH:mm")
+                                </td>
+
+                                <td class="fw-semibold">
+                                    @request.Amount.ToString("C2", usd)
+                                </td>
+
+                                <td>
+                                    <span class="staff-pending-badge">
+                                        Pending
+                                    </span>
+                                </td>
+
+                                <td class="text-end">
+                                    <a asp-controller="Payment"
+                                       asp-action="Index"
+                                       class="staff-table-action">
+                                        Review
+                                        <i class="bi bi-arrow-right ms-1"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="staff-empty-state">
+                <div class="staff-empty-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+
+                <h6 class="fw-semibold mb-1">
+                    All caught up
+                </h6>
+
+                <p class="text-muted small mb-0">
+                    No cash payment requests are waiting for review.
+                </p>
+            </div>
+        }
+    </div>
+</div>

@@ -183,7 +183,7 @@
                                                   asp-action="Reject"
                                                   asp-route-id="@request.Id"
                                                   method="post"
-                                                  onsubmit="return confirm('Reject this request?');">
+                                                  data-confirm="Reject this request?">
 
                                                 @Html.AntiForgeryToken()
 
@@ -201,7 +201,7 @@
                                                   asp-action="Complete"
                                                   asp-route-id="@request.Id"
                                                   method="post"
-                                                  onsubmit="return confirm('Mark this request as completed?');">
+                                                  data-confirm="Mark this request as completed?">
 
                                                 @Html.AntiForgeryToken()
 

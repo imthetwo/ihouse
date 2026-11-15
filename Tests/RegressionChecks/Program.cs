@@ -120,6 +120,8 @@ catch (HttpRequestException ex)
     Check(ex.StatusCode == HttpStatusCode.NotFound, "Preserve PayPal not-found status");
 }
 
+await NavigationChecks.RunAsync(Check);
+
 Console.WriteLine($"{passed} checks passed. Database and live PayPal integration were not run.");
 
 sealed class FakePayPal : HttpMessageHandler

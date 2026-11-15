@@ -29,7 +29,6 @@ body.auth-body {
     padding: 32px 24px;
 }
 
-
 /* ===== 2. SHARED COMPONENTS ===== */
 
 .auth-input {
@@ -108,7 +107,6 @@ body.auth-body {
     font-size: 12px;
 }
 
-
 /* ===== 3. LOGIN PAGE ===== */
 
 .login-page {
@@ -131,7 +129,6 @@ body.auth-body {
     box-shadow: 0 12px 40px rgba(26, 58, 100, 0.10);
 }
 
-
 /* ===== 4. LOGIN LEFT PANEL ===== */
 
 .login-intro {
@@ -143,25 +140,6 @@ body.auth-body {
     background-color: #174A80;
     color: #FFFFFF;
 }
-
-.login-logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    width: fit-content;
-    color: #FFFFFF;
-    font-size: 30px;
-    font-weight: 700;
-    text-decoration: none;
-}
-
-    .login-logo:hover {
-        color: #FFFFFF;
-    }
-
-    .login-logo .bi {
-        font-size: 30px;
-    }
 
 .login-intro-content {
     margin: auto 0;
@@ -219,7 +197,6 @@ body.auth-body {
         height: auto;
         object-fit: contain;
     }
-
 
 /* ===== 5. LOGIN RIGHT PANEL ===== */
 
@@ -304,7 +281,6 @@ body.auth-body {
     cursor: pointer;
 }
 
-
 /* ===== 6. REGISTER PAGE ===== */
 
 .register-page {
@@ -365,7 +341,6 @@ body.auth-body {
     margin-bottom: 0;
 }
 
-
 /* ===== 7. TABLET ===== */
 
 @media (max-width: 768px) {
@@ -408,7 +383,6 @@ body.auth-body {
     }
 }
 
-
 /* ===== 8. MOBILE ===== */
 
 @media (max-width: 480px) {
@@ -437,7 +411,6 @@ body.auth-body {
         font-size: 24px;
     }
 }
-
 
 /* =========================================
    9. PASSWORD & ACCOUNT PAGES
@@ -504,7 +477,6 @@ body.auth-body {
             text-decoration: underline;
         }
 
-
 /* ===== 10. RESULT ICONS ===== */
 
 .auth-result-icon {
@@ -529,7 +501,6 @@ body.auth-body {
     color: #DC2626;
 }
 
-
 /* ===== 11. RESPONSIVE PASSWORD PAGES ===== */
 
 @media (max-width: 480px) {
@@ -543,7 +514,6 @@ body.auth-body {
     }
 }
 
-
 /* =========================================
    12. PASSWORD VISIBILITY TOGGLE
    Login / Register / Reset Password
@@ -552,6 +522,11 @@ body.auth-body {
 .password-box {
     position: relative;
     width: 100%;
+}
+
+/* Keep the app's show/hide button when the browser also provides one. */
+.password-box input::-ms-reveal {
+    display: none;
 }
 
     .password-box .password-input {
@@ -588,3 +563,10 @@ body.auth-body {
             outline-offset: 2px;
             border-radius: 4px;
         }
+
+.login-intro > .ihouse-logo {
+    align-self: flex-start;
+    padding: 8px 12px;
+    border-radius: 14px;
+    background: #fff;
+}

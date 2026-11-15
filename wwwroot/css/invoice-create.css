@@ -1,0 +1,15 @@
+.invoice-date-input {
+    cursor: pointer;
+    background: #fff;
+}
+
+.invoice-date-input:hover {
+    border-color: #86b7fe;
+}
+
+.contract-info-box {
+    background: #f4f8ff;
+    border: 1px solid #dce8ff;
+    border-radius: 12px;
+    padding: 20px;
+}
