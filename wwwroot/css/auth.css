@@ -566,7 +566,29 @@ body.auth-body {
 
 .login-intro > .ihouse-logo {
     align-self: flex-start;
-    padding: 8px 12px;
-    border-radius: 14px;
-    background: #fff;
+    gap: 10px;
+    color: #fff;
+}
+
+.login-intro > .ihouse-logo:hover {
+    color: #fff;
+}
+
+.login-intro > .ihouse-logo:focus-visible {
+    outline-color: #fff;
+}
+
+.login-intro .ihouse-logo-icon {
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 30px;
+}
+
+.login-intro .ihouse-logo-name {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: normal;
 }
