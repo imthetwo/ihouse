@@ -61,7 +61,7 @@ public class AccountController : Controller
         {
             return View(model);
         }
-
+            
         var user = await _users.FindByEmailAsync(
             model.Email.Trim());
 
