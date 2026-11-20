@@ -61,7 +61,7 @@ public class AccountController : Controller
         {
             return View(model);
         }
-            
+
         var user = await _users.FindByEmailAsync(
             model.Email.Trim());
 
@@ -77,7 +77,7 @@ public class AccountController : Controller
         var result = await _signIn.PasswordSignInAsync(
             user,
             model.Password,
-            model.RememberMe,
+            isPersistent: false,
             lockoutOnFailure: true);
 
         if (result.Succeeded)

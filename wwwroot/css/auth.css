@@ -259,28 +259,6 @@ body.auth-body {
         background-color: #DCE5F0;
     }
 
-.login-language {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 12px 28px 20px;
-    color: #183153;
-}
-
-    .login-language .bi {
-        font-size: 17px;
-    }
-
-.auth-language {
-    border: none;
-    background-color: transparent;
-    color: #334155;
-    font-size: 13px;
-    cursor: pointer;
-}
-
 /* ===== 6. REGISTER PAGE ===== */
 
 .register-page {
@@ -378,9 +356,6 @@ body.auth-body {
         font-size: 28px;
     }
 
-    .login-language {
-        padding: 12px 24px 20px;
-    }
 }
 
 /* ===== 8. MOBILE ===== */
