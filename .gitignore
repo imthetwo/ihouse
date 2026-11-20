@@ -32,3 +32,21 @@ Thumbs.db
 
 # Local development secrets
 appsettings.Local.json
+
+# Local reports and temporary artifacts
+/output/
+/tmp/
+
+# Local assistant configuration and notes
+.agents/
+.codex/
+.claude/
+.cursor/
+.aider*
+AGENTS.md
+AGENTS.override.md
+CLAUDE.md
+GEMINI.md
+.github/copilot-instructions.md
+.github/instructions/
+.github/prompts/

@@ -55,17 +55,6 @@
 
 <div class="container-fluid staff-dashboard py-4">
 
-    <!-- HEADER -->
-    <div class="staff-header mb-4">
-        <a asp-controller="Payment"
-           asp-action="Index"
-           class="btn staff-header-action">
-
-            <i class="bi bi-credit-card me-2"></i>
-            Payment Management
-        </a>
-    </div>
-
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success">
