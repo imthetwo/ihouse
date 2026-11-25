@@ -3,6 +3,7 @@
 <div class="container py-4">
     <h3>Cancel PayPal payment</h3>
     <p>Cancel this checkout to choose another payment method for invoice #@Model.InvoiceId.</p>
+    <p class="text-muted">You can only cancel a checkout before PayPal starts processing the payment. Payments awaiting PayPal review cannot be cancelled here.</p>
     <form asp-action="Cancel" method="post">
         <input type="hidden" name="token" value="@Model.OrderId" />
         <button class="btn btn-danger" type="submit">Cancel this payment</button>

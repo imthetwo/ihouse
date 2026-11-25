@@ -475,6 +475,7 @@
                         {
                             <a asp-controller="PayPal" asp-action="Cancel" asp-route-token="@ViewBag.PendingPayPalOrderId"
                                class="btn btn-outline-secondary w-100 mb-3">Cancel PayPal checkout</a>
+                            <p class="small text-muted">Cancellation is only available before PayPal starts processing your payment.</p>
                         }
                         <!-- CASH FORM -->
                         <form asp-controller="TenantPayments"

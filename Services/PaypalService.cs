@@ -13,6 +13,7 @@ public sealed record PayPalOrderDetails
     public string? ApprovalUrl { get; init; }
     public string? CaptureId { get; init; }
     public string? CaptureStatus { get; init; }
+    public string? CapturePendingReason { get; init; }
     public decimal? CapturedAmount { get; init; }
     public decimal OrderAmount { get; init; }
     public string Currency { get; init; } = "";
@@ -27,6 +28,8 @@ public sealed record PayPalOrderDetails
     public bool IsFailed =>
         Status == "VOIDED" ||
         CaptureStatus is "DECLINED" or "FAILED" or "DENIED";
+
+    public bool IsCapturePending => CaptureStatus == "PENDING";
 }
 
 public sealed class PayPalService
@@ -237,6 +240,7 @@ public sealed class PayPalService
 
         string? captureId = null;
         string? captureStatus = null;
+        string? capturePendingReason = null;
         decimal? capturedAmount = null;
 
         if (purchaseUnit.TryGetProperty(
@@ -265,6 +269,9 @@ public sealed class PayPalService
 
                 captureId = GetString(capture, "id");
                 captureStatus = currentStatus;
+                capturePendingReason = capture.TryGetProperty("status_details", out var statusDetails)
+                    ? GetString(statusDetails, "reason")
+                    : null;
 
                 if (capture.TryGetProperty(
                         "amount",
@@ -287,6 +294,7 @@ public sealed class PayPalService
             OrderAmount = orderAmount,
             CaptureId = captureId,
             CaptureStatus = captureStatus,
+            CapturePendingReason = capturePendingReason,
             CapturedAmount = capturedAmount
         };
     }

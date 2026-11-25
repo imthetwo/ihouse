@@ -105,6 +105,11 @@ Check(captured.IsCaptured && captured.CapturedAmount == 10m && handler.CaptureCa
     "Already captured orders are not captured twice");
 handler.CaptureStatus = "PENDING";
 Check(!(await paypal.GetOrderAsync("ORDER-1")).IsCaptured, "Pending captures are not treated as successful");
+handler.CaptureReason = "PENDING_REVIEW";
+var pendingReview = await paypal.GetOrderAsync("ORDER-1");
+Check(!pendingReview.IsCaptured && pendingReview.IsCapturePending && pendingReview.CapturePendingReason == "PENDING_REVIEW",
+    "Preserve PayPal pending review reason without marking payment successful");
+handler.CaptureReason = null;
 handler.OrderStatus = "APPROVED";
 handler.CaptureStatus = null;
 Check((await paypal.CaptureOrderAsync("ORDER-1")).IsCaptured && handler.CaptureCalls == 1,
@@ -128,6 +133,7 @@ sealed class FakePayPal : HttpMessageHandler
 {
     public string OrderStatus = "APPROVED";
     public string? CaptureStatus;
+    public string? CaptureReason;
     public int CaptureCalls;
     public bool NotFound;
 
@@ -144,7 +150,7 @@ sealed class FakePayPal : HttpMessageHandler
         }
         var captures = CaptureStatus == null ? Array.Empty<object>() : new object[]
         {
-            new { id = "CAPTURE-1", status = CaptureStatus, amount = new { value = "10.00", currency_code = "USD" } }
+            new { id = "CAPTURE-1", status = CaptureStatus, status_details = new { reason = CaptureReason }, amount = new { value = "10.00", currency_code = "USD" } }
         };
         var order = new
         {

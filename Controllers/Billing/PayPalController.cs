@@ -162,12 +162,18 @@ public class PayPalController : Controller
             if (!order.IsCaptured)
             {
                 _logger.LogWarning(
-                    "PayPal capture not confirmed. Order={OrderId}, Status={Status}",
+                    "PayPal capture not confirmed. Order={OrderId}, Status={Status}, CaptureStatus={CaptureStatus}, Reason={Reason}",
                     orderId,
-                    order.Status);
+                    order.Status,
+                    order.CaptureStatus,
+                    order.CapturePendingReason);
 
                 TempData["Error"] =
-                    "Your payment could not be confirmed. Check its status before paying again.";
+                    order.IsCapturePending
+                        ? order.CapturePendingReason == "PENDING_REVIEW"
+                            ? "PayPal is reviewing your payment. Your invoice will remain unpaid until the payment is confirmed. Please check its status later and do not pay again."
+                            : "PayPal is still processing your payment. Please check its status later and do not pay again."
+                        : "Your payment could not be confirmed. Check its status before paying again.";
 
                 return BackToCheckout(transaction.InvoiceId);
             }
@@ -345,12 +351,25 @@ public class PayPalController : Controller
             if (!IsExpectedOrder(order, transaction))
                 throw new InvalidOperationException("PayPal order mismatch.");
 
+            if (order.IsCapturePending)
+            {
+                TempData["Error"] = order.CapturePendingReason == "PENDING_REVIEW"
+                    ? "This checkout cannot be cancelled because PayPal is reviewing the payment. Check the transaction in PayPal, then use Check Payment Status here. Do not pay again."
+                    : "This checkout cannot be cancelled because PayPal is already processing the payment. Use Check Payment Status later and do not pay again.";
+                return BackToCheckout(transaction.InvoiceId);
+            }
+
             // An approved order still needs our Capture action to charge the customer.
             // That action shares this lock and refuses cancelled transactions.
-            if (order.IsCaptured || order.Status == "COMPLETED" ||
-                (order.CaptureId != null && !order.IsFailed))
+            if (order.IsCaptured)
             {
                 return RedirectToAction(nameof(Return), new { token });
+            }
+            if (order.Status == "COMPLETED" ||
+                (order.CaptureId != null && !order.IsFailed))
+            {
+                TempData["Error"] = "This checkout cannot be cancelled because PayPal has already started processing the payment. Use Check Payment Status to verify the result.";
+                return BackToCheckout(transaction.InvoiceId);
             }
             if (!order.IsFailed && order.Status is not ("CREATED" or "PAYER_ACTION_REQUIRED" or "APPROVED"))
             {
